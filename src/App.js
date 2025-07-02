@@ -61,7 +61,6 @@ const ChatMessage = ({ message }) => {
       if (part.match(urlRegex)) {
         return <a key={index} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{part}</a>;
       }
-      // Renderizar texto en negrita y saltos de línea
       const boldRegex = /\*\*(.*?)\*\*/g;
       const textParts = part.split(boldRegex);
       return textParts.map((textPart, i) => 
@@ -112,11 +111,34 @@ export default function App() {
   const sendBotMessage = async (textBlocks) => {
     for (const block of textBlocks) {
         setIsLoading(true);
-        const typingDelay = Math.min(500 + (block.length * 50), 2000);
-        await new Promise(resolve => setTimeout(resolve, typingDelay));
+
+        // --- LÓGICA DE RETARDO MEJORADA PARA SIMULAR ESCRITURA HUMANA ---
+        // Se calcula un retardo que depende de la longitud del mensaje para que
+        // respuestas cortas aparezcan rápido y respuestas largas tomen más tiempo.
+
+        // 1. Se define una velocidad de escritura creíble (caracteres por segundo).
+        const charsPerSecond = 12; // Un buen balance: rápido, pero notable.
+
+        // 2. Se calcula el tiempo que tomaría escribir el mensaje a esa velocidad.
+        const timeToType = (block.length / charsPerSecond) * 1000;
+
+        // 3. Se añade un retardo base para simular el tiempo de "pensar" antes de escribir.
+        const baseDelay = 500; // 0.5 segundos
+        
+        const totalDelay = baseDelay + timeToType;
+
+        // 4. Se establece un límite máximo para no hacer esperar demasiado al usuario.
+        const maxDelay = 20000; // 4.5 segundos
+        const finalDelay = Math.min(totalDelay, maxDelay);
+
+        // Se espera el tiempo calculado antes de mostrar el mensaje.
+        await new Promise(resolve => setTimeout(resolve, finalDelay));
+        
         setIsLoading(false);
         setMessages(prev => [...prev, { role: 'model', text: block }]);
-        await new Promise(resolve => setTimeout(resolve, 700));
+        
+        // Pequeña pausa después de mostrar el mensaje para que el siguiente no aparezca tan de golpe.
+        await new Promise(resolve => setTimeout(resolve, 400)); 
     }
   };
 
@@ -142,6 +164,32 @@ export default function App() {
     if (isOpen && !isLoading) { inputRef.current?.focus(); }
   }, [isOpen, isLoading]);
 
+  // --- LÓGICA CORREGIDA PARA MOSTRAR BOTONES DE IA ---
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+
+    // Solo actuar si el último mensaje es del bot, para no re-evaluar con mensajes del usuario
+    if (lastMessage && lastMessage.role === 'model') {
+        const userMessagesCount = messages.filter(m => m.role === 'user').length;
+        const botResponseText = lastMessage.text;
+
+        const newButtonState = { suggest: false, plan: false, interview: false };
+        const courses = ["Real Estate", "Plomería", "Inglés", "Diseño de Espacios", "Paisajismo", "Fotografía", "Cuidado de Adultos Mayores"];
+        const mentionedCourse = courses.find(course => botResponseText.toLowerCase().includes(course.toLowerCase()));
+
+        if (mentionedCourse) {
+            setLastCourseMentioned(mentionedCourse);
+            newButtonState.plan = true;
+            newButtonState.interview = true;
+        } else if (userMessagesCount === 1) { // Si el usuario ha enviado solo 1 mensaje
+            newButtonState.suggest = true;
+        }
+        
+        setShowGeminiButtons(newButtonState);
+    }
+  }, [messages]); // Se ejecuta cada vez que el array de mensajes cambia
+
+
   const callGeminiAPI = async (prompt, systemPrompt) => {
     setIsLoading(true);
     let botResponseText = 'Lo siento, parece que estoy teniendo problemas para conectarme. Por favor, intenta de nuevo.';
@@ -149,9 +197,6 @@ export default function App() {
         const chatHistoryForAPI = [...messages.map(m => ({ role: m.role, parts: [{ text: m.text }] })), { role: "user", parts: [{ text: prompt }] }];
         const payload = { contents: chatHistoryForAPI, systemInstruction: { role: "model", parts: [{ text: systemPrompt }] } };
         
-        // CORREGIDO: Usa la variable de entorno de React correctamente.
-        // Para pruebas locales, crea un archivo .env en la raíz del proyecto con:
-        // REACT_APP_GEMINI_API_KEY=tu_clave_aqui
         const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
 
         if (!apiKey) {
@@ -254,27 +299,20 @@ export default function App() {
     } else {
         await sendBotMessage(botResponseText.split('[---]'));
     }
-
-    // Lógica para mostrar botones de IA
-    const courses = ["Real Estate", "Plomería", "Inglés", "Diseño de Espacios", "Paisajismo", "Fotografía", "Cuidado de Adultos Mayores"];
-    const mentionedCourse = courses.find(course => botResponseText.toLowerCase().includes(course.toLowerCase()));
-    if (mentionedCourse) {
-        setLastCourseMentioned(mentionedCourse);
-        setShowGeminiButtons(prev => ({ ...prev, plan: true, interview: true }));
-    }
-    if (messages.length <= 2) {
-        setShowGeminiButtons(prev => ({ ...prev, suggest: true }));
-    }
   };
 
   return (
     <div className="bg-transparent font-sans w-full h-full">
       {showInvoice && <InvoiceModal customerData={customerData} onClose={() => setShowInvoice(false)} />}
-      <div className={`fixed bottom-24 right-4 flex flex-col gap-2 transition-all duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        {showGeminiButtons.suggest && <button onClick={() => handleSendMessage(null, 'suggest_course')} className="bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-purple-700"><Sparkles size={16}/>Sugerir Curso</button>}
-        {showGeminiButtons.plan && <button onClick={() => handleSendMessage(null, 'create_plan', lastCourseMentioned)} className="bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-purple-700"><BookOpen size={16}/>Crear Plan de Estudio</button>}
-        {showGeminiButtons.interview && <button onClick={() => handleSendMessage(null, 'simulate_interview', lastCourseMentioned)} className="bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-purple-700"><Briefcase size={16}/>Simular Entrevista</button>}
+      
+      {/* Botones de IA Flotantes */}
+      <div className={`fixed bottom-24 right-4 flex flex-col items-end gap-2 transition-all duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        {showGeminiButtons.suggest && <button onClick={() => handleSendMessage(null, 'suggest_course')} className="bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-purple-700 animate-fade-in"><Sparkles size={16}/>Sugerir Curso</button>}
+        {showGeminiButtons.plan && <button onClick={() => handleSendMessage(null, 'create_plan', lastCourseMentioned)} className="bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-purple-700 animate-fade-in"><BookOpen size={16}/>Crear Plan de Estudio</button>}
+        {showGeminiButtons.interview && <button onClick={() => handleSendMessage(null, 'simulate_interview', lastCourseMentioned)} className="bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-purple-700 animate-fade-in"><Briefcase size={16}/>Simular Entrevista</button>}
       </div>
+
+      {/* Contenedor del Chat */}
       <div className={`fixed bottom-20 right-4 w-[calc(100vw-2rem)] max-w-md h-[70vh] max-h-[600px] transition-all duration-300 ease-in-out origin-bottom-right ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
         <div className="relative flex flex-col h-full bg-white font-sans overflow-hidden rounded-2xl shadow-2xl border border-gray-200">
             <header className="bg-white shadow-sm z-10 border-b">
@@ -310,7 +348,13 @@ export default function App() {
             </footer>
         </div>
       </div>
-      <button onClick={() => setIsOpen(true)} className={`fixed bottom-4 right-4 bg-indigo-600 text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg transform transition-all duration-300 ease-in-out hover:bg-indigo-700 hover:scale-110 ${!isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`} aria-label="Abrir chat">
+
+      {/* Botón de la Burbuja (Launcher) */}
+      <button 
+        onClick={() => setIsOpen(true)}
+        className={`fixed bottom-4 right-4 bg-indigo-600 text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg transform transition-all duration-300 ease-in-out hover:bg-indigo-700 hover:scale-110 ${!isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
+        aria-label="Abrir chat"
+      >
         <MessageSquare size={32} />
       </button>
     </div>
