@@ -63,17 +63,11 @@ const ChatMessage = ({ message }) => {
       }
       const boldRegex = /\*\*(.*?)\*\*/g;
       const textParts = part.split(boldRegex);
-      
-      // --- LÓGICA CORREGIDA PARA MANEJAR SALTOS DE LÍNEA ---
       return textParts.map((textPart, i) => {
         if (i % 2 === 1) {
           return <strong key={i}>{textPart}</strong>;
         }
-        
-        // Dividir el texto por saltos de línea
         const lines = textPart.split('\n');
-        
-        // Mapear cada línea y añadir un <br /> solo si no es la última línea del bloque
         return lines.map((line, j) => (
           <React.Fragment key={j}>
             {line}
@@ -187,7 +181,6 @@ export default function App() {
 
 
   const callGeminiAPI = async (prompt, systemPrompt) => {
-    setIsLoading(true);
     let botResponseText = '';
     try {
         const chatHistoryForAPI = [...messages.map(m => ({ role: m.role, parts: [{ text: m.text }] })), { role: "user", parts: [{ text: prompt }] }];
@@ -197,6 +190,7 @@ export default function App() {
             throw new Error("API key not configured.");
         }
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+        
         const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         
         if (!response.ok) {
@@ -222,7 +216,6 @@ export default function App() {
             botResponseText = "Parece que la conexión está un poco inestable. ¿Podrías intentar enviar tu mensaje de nuevo?";
         }
     } finally {
-        setIsLoading(false);
         return botResponseText;
     }
   };
@@ -232,6 +225,8 @@ export default function App() {
     const userInput = geminiAction ? `Acción del usuario: ${geminiAction}` : input;
     if (!userInput.trim() && !geminiAction) return;
 
+    const isFirstUserMessage = messages.filter(m => m.role === 'user').length === 0;
+
     if (!geminiAction) {
         const userMessage = { role: 'user', text: userInput };
         setMessages(prev => [...prev, userMessage]);
@@ -240,6 +235,14 @@ export default function App() {
     clearTimeout(inactivityTimerRef.current);
     setInactivityPromptCount(0);
     setShowGeminiButtons({ suggest: false, plan: false, interview: false });
+
+    if (isFirstUserMessage && !geminiAction) {
+        await new Promise(resolve => setTimeout(resolve, 6000)); 
+    } else if (!geminiAction) {
+        await new Promise(resolve => setTimeout(resolve, 2500));
+    }
+
+    setIsLoading(true);
 
     if (salesStage === 'esperando_pago' && (userInput.toLowerCase().includes('ya pagué') || userInput.toLowerCase().includes('listo'))) {
         setShowInvoice(true); setSalesStage('finalizado');
@@ -283,7 +286,15 @@ export default function App() {
     }
 
     let prompt = userInput;
-    let systemPrompt = `Eres un asesor comercial de Studyx llamado ${advisorName}. Tu personalidad es amable, profesional y persuasiva. Tu objetivo es vender la suscripción de $25. El estado actual de la venta es '${salesStage}'. Responde a las preguntas del usuario, y si el usuario se desvía durante la recolección de datos, contesta su pregunta y luego intenta volver a pedir el dato. Usa '[---]' para dividir respuestas largas. NUNCA admitas que eres una IA.`;
+    // --- CAMBIO REALIZADO: NUEVA DIRECTIVA EN EL SYSTEM PROMPT ---
+    let systemPrompt = `Eres un asesor comercial de Studyx llamado ${advisorName}. Tu personalidad es amable, profesional y persuasiva. Tu objetivo es vender la suscripción de $25. El estado actual de la venta es '${salesStage}'. Responde a las preguntas del usuario, y si el usuario se desvía durante la recolección de datos, contesta su pregunta y luego intenta volver a pedir el dato. Usa '[---]' para dividir respuestas largas. NUNCA admitas que eres una IA.
+
+    *Manejo de Solicitudes de Cancelación:*
+    - Si el usuario expresa su deseo de cancelar su suscripción, dar de baja el servicio, o usa palabras como "cancelar", "baja", "cancelación", tu objetivo principal cambia de vender a asistir.
+    - Responde con empatía, por ejemplo: "Lamento escuchar que quieres darte de baja. Por supuesto, puedes cancelar tu suscripción en cualquier momento y sin penalizaciones."
+    - A continuación, proporciona la información de contacto para gestionar la baja. Di: "Para procesar tu solicitud, por favor envía un email a nuestro equipo de soporte a info@mystudyx.com y ellos te ayudarán con los siguientes pasos."
+    - **REGLA CRÍTICA:** Después de proporcionar esta información, NO intentes venderle otro curso ni preguntarle por sus intereses. Termina la interacción de forma amable, por ejemplo: "¿Hay algo más en lo que te pueda ayudar?".
+    `;
     
     if (geminiAction === 'suggest_course') {
         prompt = `El usuario acaba de enviar su primer mensaje. Basado en el historial de conversación, sugiere el curso más adecuado de la base de conocimientos y explica por qué es una buena opción para él/ella.`;
