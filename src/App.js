@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, Bot, User, Loader, Sparkles, X, MessageSquare, BookOpen, Briefcase } from 'lucide-react';
 
 // --- URLs de los recursos visuales ---
-const teamAvatarUrl = "https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1";
+const teamAvatarUrl = "https://studyxacademia.com/wp-content/uploads/2024/07/cropped-android-chrome-512x512-2.png";
 
 // --- Componente para la Factura (Invoice) ---
 const InvoiceModal = ({ customerData, onClose }) => {
@@ -112,32 +112,19 @@ export default function App() {
     for (const block of textBlocks) {
         setIsLoading(true);
 
-        // --- LÓGICA DE RETARDO MEJORADA PARA SIMULAR ESCRITURA HUMANA ---
-        // Se calcula un retardo que depende de la longitud del mensaje para que
-        // respuestas cortas aparezcan rápido y respuestas largas tomen más tiempo.
-
-        // 1. Se define una velocidad de escritura creíble (caracteres por segundo).
-        const charsPerSecond = 12; // Un buen balance: rápido, pero notable.
-
-        // 2. Se calcula el tiempo que tomaría escribir el mensaje a esa velocidad.
+        const charsPerSecond = 12;
         const timeToType = (block.length / charsPerSecond) * 1000;
-
-        // 3. Se añade un retardo base para simular el tiempo de "pensar" antes de escribir.
-        const baseDelay = 500; // 0.5 segundos
-        
+        const baseDelay = 500;
         const totalDelay = baseDelay + timeToType;
-
-        // 4. Se establece un límite máximo para no hacer esperar demasiado al usuario.
-        const maxDelay = 20000; // 4.5 segundos
+        
+        const maxDelay = 10000; // 10 segundos
         const finalDelay = Math.min(totalDelay, maxDelay);
 
-        // Se espera el tiempo calculado antes de mostrar el mensaje.
         await new Promise(resolve => setTimeout(resolve, finalDelay));
         
         setIsLoading(false);
         setMessages(prev => [...prev, { role: 'model', text: block }]);
         
-        // Pequeña pausa después de mostrar el mensaje para que el siguiente no aparezca tan de golpe.
         await new Promise(resolve => setTimeout(resolve, 400)); 
     }
   };
@@ -164,55 +151,62 @@ export default function App() {
     if (isOpen && !isLoading) { inputRef.current?.focus(); }
   }, [isOpen, isLoading]);
 
-  // --- LÓGICA CORREGIDA PARA MOSTRAR BOTONES DE IA ---
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
-
-    // Solo actuar si el último mensaje es del bot, para no re-evaluar con mensajes del usuario
     if (lastMessage && lastMessage.role === 'model') {
         const userMessagesCount = messages.filter(m => m.role === 'user').length;
         const botResponseText = lastMessage.text;
-
         const newButtonState = { suggest: false, plan: false, interview: false };
         const courses = ["Real Estate", "Plomería", "Inglés", "Diseño de Espacios", "Paisajismo", "Fotografía", "Cuidado de Adultos Mayores"];
         const mentionedCourse = courses.find(course => botResponseText.toLowerCase().includes(course.toLowerCase()));
-
         if (mentionedCourse) {
             setLastCourseMentioned(mentionedCourse);
             newButtonState.plan = true;
             newButtonState.interview = true;
-        } else if (userMessagesCount === 1) { // Si el usuario ha enviado solo 1 mensaje
+        } else if (userMessagesCount === 1) {
             newButtonState.suggest = true;
         }
-        
         setShowGeminiButtons(newButtonState);
     }
-  }, [messages]); // Se ejecuta cada vez que el array de mensajes cambia
+  }, [messages]);
 
 
   const callGeminiAPI = async (prompt, systemPrompt) => {
     setIsLoading(true);
-    let botResponseText = 'Lo siento, parece que estoy teniendo problemas para conectarme. Por favor, intenta de nuevo.';
+    let botResponseText = '';
     try {
         const chatHistoryForAPI = [...messages.map(m => ({ role: m.role, parts: [{ text: m.text }] })), { role: "user", parts: [{ text: prompt }] }];
         const payload = { contents: chatHistoryForAPI, systemInstruction: { role: "model", parts: [{ text: systemPrompt }] } };
-        
         const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
-
         if (!apiKey) {
-            botResponseText = "Error: La clave de API de Gemini no está configurada.";
-            throw new Error(botResponseText);
+            throw new Error("API key not configured.");
         }
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
         const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+        
+        if (!response.ok) {
+            if (response.status === 429) {
+                throw new Error("429");
+            }
+            throw new Error("Network error");
+        }
+
         const result = await response.json();
         if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts.length > 0) {
             botResponseText = result.candidates[0].content.parts[0].text;
+        } else {
+            botResponseText = "No he podido procesar esa solicitud. ¿Podrías intentarlo de otra manera?";
         }
     } catch (error) {
         console.error("Error fetching AI response:", error);
-        botResponseText = `Hubo un error al procesar tu solicitud. ${error.message}`;
+        // --- CAMBIO REALIZADO: MANEJO DE ERRORES MEJORADO (OPCIÓN 3) ---
+        if (error.message === "429") {
+            const errorHeader = "Nuestros asesores están con muchas consultas en este momento. Por favor, espera un minuto y vuelve a intentarlo.";
+            const suggestionText = `Mientras tanto, aquí tienes un vistazo a lo que ofrecemos:\n* **Real Estate:** Conviértete en un profesional inmobiliario.\n* **Plomería:** Aprende un oficio con alta demanda.\n* **Inglés:** Abre las puertas al mundo.\n\n¿Quieres ver más? [Explora todos nuestros cursos aquí](https://studyxacademia.com/cursos/).`;
+            botResponseText = `${errorHeader}[---]${suggestionText}`;
+        } else {
+            botResponseText = "Parece que la conexión está un poco inestable. ¿Podrías intentar enviar tu mensaje de nuevo?";
+        }
     } finally {
         setIsLoading(false);
         return botResponseText;
@@ -233,7 +227,6 @@ export default function App() {
     setInactivityPromptCount(0);
     setShowGeminiButtons({ suggest: false, plan: false, interview: false });
 
-    // --- LÓGICA DE MÁQUINA DE ESTADOS PARA EL PROCESO DE VENTA ---
     if (salesStage === 'esperando_pago' && (userInput.toLowerCase().includes('ya pagué') || userInput.toLowerCase().includes('listo'))) {
         setShowInvoice(true); setSalesStage('finalizado');
         const finalMessage = `Excelente! Bienvenido a Studyx...`;
@@ -275,7 +268,6 @@ export default function App() {
         return;
     }
 
-    // --- LÓGICA DE GEMINI API ---
     let prompt = userInput;
     let systemPrompt = `Eres un asesor comercial de Studyx llamado ${advisorName}. Tu personalidad es amable, profesional y persuasiva. Tu objetivo es vender la suscripción de $25. El estado actual de la venta es '${salesStage}'. Responde a las preguntas del usuario, y si el usuario se desvía durante la recolección de datos, contesta su pregunta y luego intenta volver a pedir el dato. Usa '[---]' para dividir respuestas largas. NUNCA admitas que eres una IA.`;
     
@@ -305,14 +297,12 @@ export default function App() {
     <div className="bg-transparent font-sans w-full h-full">
       {showInvoice && <InvoiceModal customerData={customerData} onClose={() => setShowInvoice(false)} />}
       
-      {/* Botones de IA Flotantes */}
       <div className={`fixed bottom-24 right-4 flex flex-col items-end gap-2 transition-all duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         {showGeminiButtons.suggest && <button onClick={() => handleSendMessage(null, 'suggest_course')} className="bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-purple-700 animate-fade-in"><Sparkles size={16}/>Sugerir Curso</button>}
         {showGeminiButtons.plan && <button onClick={() => handleSendMessage(null, 'create_plan', lastCourseMentioned)} className="bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-purple-700 animate-fade-in"><BookOpen size={16}/>Crear Plan de Estudio</button>}
         {showGeminiButtons.interview && <button onClick={() => handleSendMessage(null, 'simulate_interview', lastCourseMentioned)} className="bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-purple-700 animate-fade-in"><Briefcase size={16}/>Simular Entrevista</button>}
       </div>
 
-      {/* Contenedor del Chat */}
       <div className={`fixed bottom-20 right-4 w-[calc(100vw-2rem)] max-w-md h-[70vh] max-h-[600px] transition-all duration-300 ease-in-out origin-bottom-right ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
         <div className="relative flex flex-col h-full bg-white font-sans overflow-hidden rounded-2xl shadow-2xl border border-gray-200">
             <header className="bg-white shadow-sm z-10 border-b">
@@ -343,13 +333,14 @@ export default function App() {
                         <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Escribe tu consulta aquí..." className="flex-1 w-full px-4 py-3 border-2 border-transparent rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition" disabled={isLoading} />
                         <button type="submit" disabled={isLoading || !input.trim()} className="bg-indigo-600 text-white rounded-full p-3 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-500"><Send size={20} /></button>
                     </form>
-                    <p className="text-xs text-center text-gray-400 mt-2 flex items-center justify-center gap-1"><Sparkles size={12} className="text-indigo-400"/> Asistente potenciado por IA</p>
+                    <div className="flex justify-center mt-2 py-1">
+                        <img src="https://studyxacademia.com/wp-content/uploads/2024/08/logo-nuevo-xs-min.png" alt="Logo Studyx" className="h-5" />
+                    </div>
                 </div>
             </footer>
         </div>
       </div>
 
-      {/* Botón de la Burbuja (Launcher) */}
       <button 
         onClick={() => setIsOpen(true)}
         className={`fixed bottom-4 right-4 bg-indigo-600 text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg transform transition-all duration-300 ease-in-out hover:bg-indigo-700 hover:scale-110 ${!isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
