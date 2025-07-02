@@ -63,15 +63,30 @@ const ChatMessage = ({ message }) => {
       }
       const boldRegex = /\*\*(.*?)\*\*/g;
       const textParts = part.split(boldRegex);
-      return textParts.map((textPart, i) => 
-        i % 2 === 1 ? <strong key={i}>{textPart}</strong> : textPart.split('\n').map((line, j) => <span key={j}>{line}<br/></span>)
-      );
+      
+      // --- LÓGICA CORREGIDA PARA MANEJAR SALTOS DE LÍNEA ---
+      return textParts.map((textPart, i) => {
+        if (i % 2 === 1) {
+          return <strong key={i}>{textPart}</strong>;
+        }
+        
+        // Dividir el texto por saltos de línea
+        const lines = textPart.split('\n');
+        
+        // Mapear cada línea y añadir un <br /> solo si no es la última línea del bloque
+        return lines.map((line, j) => (
+          <React.Fragment key={j}>
+            {line}
+            {j < lines.length - 1 && <br />}
+          </React.Fragment>
+        ));
+      });
     });
   };
   return (
     <div className={`flex items-start gap-3 my-4 ${isBot ? 'justify-start' : 'justify-end'}`}>
       {isBot && <img src={teamAvatarUrl} alt="Equipo de Studyx" className="flex-shrink-0 w-10 h-10 rounded-full object-cover" />}
-      <div className={`px-4 py-3 rounded-2xl max-w-lg break-words ${isBot ? 'bg-gray-200 text-gray-800 rounded-tl-none' : 'bg-blue-600 text-white rounded-br-none'}`}>
+      <div className={`px-4 py-3 rounded-2xl max-w-lg break-words leading-relaxed ${isBot ? 'bg-gray-200 text-gray-800 rounded-tl-none' : 'bg-blue-600 text-white rounded-br-none'}`}>
         {isBot ? renderMessageWithLinks(message.text) : message.text}
       </div>
       {!isBot && <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600"><User size={24} /></div>}
@@ -181,7 +196,7 @@ export default function App() {
         if (!apiKey) {
             throw new Error("API key not configured.");
         }
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
         const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         
         if (!response.ok) {
@@ -199,7 +214,6 @@ export default function App() {
         }
     } catch (error) {
         console.error("Error fetching AI response:", error);
-        // --- CAMBIO REALIZADO: MANEJO DE ERRORES MEJORADO (OPCIÓN 3) ---
         if (error.message === "429") {
             const errorHeader = "Nuestros asesores están con muchas consultas en este momento. Por favor, espera un minuto y vuelve a intentarlo.";
             const suggestionText = `Mientras tanto, aquí tienes un vistazo a lo que ofrecemos:\n* **Real Estate:** Conviértete en un profesional inmobiliario.\n* **Plomería:** Aprende un oficio con alta demanda.\n* **Inglés:** Abre las puertas al mundo.\n\n¿Quieres ver más? [Explora todos nuestros cursos aquí](https://studyxacademia.com/cursos/).`;
