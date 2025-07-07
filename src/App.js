@@ -90,7 +90,6 @@ const ChatMessage = ({ message }) => {
 
 // --- Componente Principal de la Aplicación de Chat ---
 export default function App() {
-  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -142,7 +141,7 @@ export default function App() {
     scrollToBottom();
     clearTimeout(inactivityTimerRef.current);
     const lastMessage = messages[messages.length - 1];
-    if (isOpen && lastMessage && lastMessage.role === 'model' && inactivityPromptCount < 2 && salesStage !== 'finalizado') {
+    if (lastMessage && lastMessage.role === 'model' && inactivityPromptCount < 2 && salesStage !== 'finalizado') {
         const timeoutDuration = 120000;
         inactivityTimerRef.current = setTimeout(() => {
             if (inactivityPromptCount === 0) { sendBotMessage(["Sigues ahí?"]); setInactivityPromptCount(1); } 
@@ -154,11 +153,11 @@ export default function App() {
         }, timeoutDuration);
     }
     return () => clearTimeout(inactivityTimerRef.current);
-  }, [messages, isOpen]);
+  }, [messages]);
 
   useEffect(() => {
-    if (isOpen && !isLoading) { inputRef.current?.focus(); }
-  }, [isOpen, isLoading]);
+    if (!isLoading) { inputRef.current?.focus(); }
+  }, [isLoading]);
 
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
@@ -286,7 +285,6 @@ export default function App() {
     }
 
     let prompt = userInput;
-    // --- CAMBIO REALIZADO: NUEVA DIRECTIVA EN EL SYSTEM PROMPT ---
     let systemPrompt = `Eres un asesor comercial de Studyx llamado ${advisorName}. Tu personalidad es amable, profesional y persuasiva. Tu objetivo es vender la suscripción de $25. El estado actual de la venta es '${salesStage}'. Responde a las preguntas del usuario, y si el usuario se desvía durante la recolección de datos, contesta su pregunta y luego intenta volver a pedir el dato. Usa '[---]' para dividir respuestas largas. NUNCA admitas que eres una IA.
 
     *Manejo de Solicitudes de Cancelación:*
@@ -319,60 +317,51 @@ export default function App() {
   };
 
   return (
-    <div className="bg-transparent font-sans w-full h-full">
+    // --- CAMBIO REALIZADO: CONTENEDOR PRINCIPAL A PANTALLA COMPLETA ---
+    <div className="flex flex-col h-screen bg-gray-100 font-sans">
       {showInvoice && <InvoiceModal customerData={customerData} onClose={() => setShowInvoice(false)} />}
       
-      <div className={`fixed bottom-24 right-4 flex flex-col items-end gap-2 transition-all duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        {showGeminiButtons.suggest && <button onClick={() => handleSendMessage(null, 'suggest_course')} className="bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-purple-700 animate-fade-in"><Sparkles size={16}/>Sugerir Curso</button>}
-        {showGeminiButtons.plan && <button onClick={() => handleSendMessage(null, 'create_plan', lastCourseMentioned)} className="bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-purple-700 animate-fade-in"><BookOpen size={16}/>Crear Plan de Estudio</button>}
-        {showGeminiButtons.interview && <button onClick={() => handleSendMessage(null, 'simulate_interview', lastCourseMentioned)} className="bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-purple-700 animate-fade-in"><Briefcase size={16}/>Simular Entrevista</button>}
-      </div>
+      <header className="bg-white shadow-sm z-10 border-b flex-shrink-0">
+          <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+              <h1 className="text-xl font-bold text-gray-800 tracking-tighter">Asesor Comercial Studyx</h1>
+              {/* Se puede añadir un logo o más elementos aquí si se desea */}
+          </div>
+      </header>
 
-      <div className={`fixed bottom-20 right-4 w-[calc(100vw-2rem)] max-w-md h-[70vh] max-h-[600px] transition-all duration-300 ease-in-out origin-bottom-right ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
-        <div className="relative flex flex-col h-full bg-white font-sans overflow-hidden rounded-2xl shadow-2xl border border-gray-200">
-            <header className="bg-white shadow-sm z-10 border-b">
-                <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-                    <h1 className="text-xl font-bold text-gray-800 tracking-tighter">Asesor Studyx</h1>
-                    <button onClick={() => setIsOpen(false)} className="text-gray-500 hover:text-gray-800"><X size={20} /></button>
-                </div>
-            </header>
-            <main className="flex-1 overflow-y-auto p-4">
-                <div className="container mx-auto max-w-3xl">
-                    {messages.map((msg, index) => <ChatMessage key={index} message={msg} />)}
-                    {isLoading && (
-                        <div className="flex items-start gap-3 my-4 justify-start">
-                            <img src={teamAvatarUrl} alt="Equipo de Studyx escribiendo" className="flex-shrink-0 w-10 h-10 rounded-full object-cover" />
-                            <div className="px-4 py-3 rounded-2xl bg-gray-200 text-gray-500 rounded-tl-none flex items-center justify-center">
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{animationDelay: '0s'}}></div>
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse mx-1" style={{animationDelay: '0.2s'}}></div>
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-                            </div>
-                        </div>
-                    )}
-                    <div ref={chatEndRef} />
-                </div>
-            </main>
-            <footer className="bg-white border-t p-2">
-                <div className="container mx-auto max-w-3xl">
-                    <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                        <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Escribe tu consulta aquí..." className="flex-1 w-full px-4 py-3 border-2 border-transparent rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition" disabled={isLoading} />
-                        <button type="submit" disabled={isLoading || !input.trim()} className="bg-indigo-600 text-white rounded-full p-3 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-500"><Send size={20} /></button>
-                    </form>
-                    <div className="flex justify-center mt-2 py-1">
-                        <img src="https://studyxacademia.com/wp-content/uploads/2024/08/logo-nuevo-xs-min.png" alt="Logo Studyx" className="h-5" />
-                    </div>
-                </div>
-            </footer>
-        </div>
-      </div>
+      <main className="flex-1 overflow-y-auto p-4">
+          <div className="container mx-auto max-w-3xl">
+              {messages.map((msg, index) => <ChatMessage key={index} message={msg} />)}
+              {isLoading && (
+                  <div className="flex items-start gap-3 my-4 justify-start">
+                      <img src={teamAvatarUrl} alt="Equipo de Studyx escribiendo" className="flex-shrink-0 w-10 h-10 rounded-full object-cover" />
+                      <div className="px-4 py-3 rounded-2xl bg-gray-200 text-gray-500 rounded-tl-none flex items-center justify-center">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{animationDelay: '0s'}}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse mx-1" style={{animationDelay: '0.2s'}}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                      </div>
+                  </div>
+              )}
+              <div ref={chatEndRef} />
+          </div>
+      </main>
 
-      <button 
-        onClick={() => setIsOpen(true)}
-        className={`fixed bottom-4 right-4 bg-indigo-600 text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg transform transition-all duration-300 ease-in-out hover:bg-indigo-700 hover:scale-110 ${!isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
-        aria-label="Abrir chat"
-      >
-        <MessageSquare size={32} />
-      </button>
+      <footer className="bg-white border-t p-2 flex-shrink-0">
+          <div className="container mx-auto max-w-3xl">
+              {/* --- CAMBIO REALIZADO: REUBICACIÓN DE BOTONES DE IA --- */}
+              <div className="flex justify-center items-center gap-2 mb-2 px-2">
+                  {showGeminiButtons.suggest && <button onClick={() => handleSendMessage(null, 'suggest_course')} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Sparkles size={14}/>Sugerir Curso</button>}
+                  {showGeminiButtons.plan && <button onClick={() => handleSendMessage(null, 'create_plan', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><BookOpen size={14}/>Crear Plan</button>}
+                  {showGeminiButtons.interview && <button onClick={() => handleSendMessage(null, 'simulate_interview', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Briefcase size={14}/>Simular Entrevista</button>}
+              </div>
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                  <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Escribe tu consulta aquí..." className="flex-1 w-full px-4 py-3 border-2 border-transparent rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition" disabled={isLoading} />
+                  <button type="submit" disabled={isLoading || !input.trim()} className="bg-indigo-600 text-white rounded-full p-3 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-500"><Send size={20} /></button>
+              </form>
+              <div className="flex justify-center mt-2 py-1">
+                  <img src="https://studyxacademia.com/wp-content/uploads/2024/08/logo-nuevo-xs-min.png" alt="Logo Studyx" className="h-5" />
+              </div>
+          </div>
+      </footer>
     </div>
   );
 }
