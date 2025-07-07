@@ -104,7 +104,7 @@ export default function App() {
   const chatEndRef = useRef(null);
   const inactivityTimerRef = useRef(null);
   const inputRef = useRef(null);
-  const isInitialMount = useRef(true); // Ref para controlar la carga inicial
+  const isInitialMount = useRef(true);
 
   const knowledgeBase = `La academia se llama Studyx. La oferta es una suscripción mensual de $25 durante 12 meses. El enlace de pago es: https://buy.stripe.com/eVacOw4yzdz553idQR. El campus virtual es: https://mystudyx.com/campus-virtual. Beneficios: Acceso a TODOS los cursos, profesor online 24/7, clases en vivo semanales. Cursos: Real Estate, Plomería, Inglés, Diseño de Espacios, Paisajismo, Fotografía, Cuidado de Adultos Mayores. Canales de Atención al Cliente (SOLO para después de la venta o si no puedes resolver): Asistencia al Alumno (Teléfono): 866-217-7282, WhatsApp Oficial: 786-916-4372, Email General: info@mystudyx.com, Email para Tutores: studyxtutorias@gmail.com. *Opción de pago Zelle:* info@studyxacademia.com.`;
 
@@ -138,10 +138,9 @@ export default function App() {
     }
   };
 
+  // --- LÓGICA DE SCROLL CORREGIDA ---
   useEffect(() => {
-    // --- CAMBIO REALIZADO: EVITAR SCROLL EN LA CARGA INICIAL ---
-    // No hacer scroll en la carga inicial para evitar el salto de la página padre.
-    // Solo hacer scroll después de que el usuario haya interactuado.
+    // Siempre hacer scroll, excepto en la carga inicial para evitar el salto de la página padre.
     if (!isInitialMount.current) {
       scrollToBottom();
     }
@@ -160,11 +159,10 @@ export default function App() {
         }, timeoutDuration);
     }
     return () => clearTimeout(inactivityTimerRef.current);
-  }, [messages]);
+  }, [messages, isLoading]); // Se añade isLoading a las dependencias
 
   useEffect(() => {
     if (isInitialMount.current) {
-      // En el primer render, no hacemos nada con el foco.
       return;
     }
 
@@ -238,7 +236,6 @@ export default function App() {
     const userInput = geminiAction ? `Acción del usuario: ${geminiAction}` : input;
     if (!userInput.trim() && !geminiAction) return;
 
-    // Marcar que la montura inicial ha terminado después de la primera interacción
     if (isInitialMount.current) {
         isInitialMount.current = false;
     }
