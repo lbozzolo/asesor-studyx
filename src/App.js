@@ -292,7 +292,7 @@ export default function App() {
   };
 
   return (
-    <div className="w-screen h-screen bg-gray-50 flex flex-col font-sans">
+    <div className="w-screen h-screen bg-gray-50 flex flex-col font-sans text-base">
       {showInvoice && <InvoiceModal customerData={customerData} onClose={() => setShowInvoice(false)} />}
       
       <header className="py-4 bg-white shadow-sm flex-shrink-0 z-10">
@@ -305,20 +305,20 @@ export default function App() {
         <div className="container mx-auto h-full">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
             
-            {/* --- CAMBIO REALIZADO: TIPOGRAFÍA RESPONSIVE --- */}
+            {/* --- CAMBIO REALIZADO: TIPOGRAFÍA RESPONSIVE MEJORADA --- */}
             <div className="flex flex-col justify-center space-y-4 md:space-y-6 pr-0 lg:pr-12">
-                <h1 className="text-3xl sm:text-4xl xl:text-5xl font-bold text-gray-800 leading-tight">
+                <h1 className="text-4xl lg:text-5xl font-bold text-gray-800 leading-tight">
                     Tu Futuro Profesional Comienza Hoy.
                 </h1>
-                <p className="text-base sm:text-lg text-gray-600">
+                <p className="text-lg lg:text-xl text-gray-600">
                     Accede a todos nuestros cursos con un solo pago y obtén las habilidades que el mercado laboral demanda.
                 </p>
-                <ul className="space-y-3 text-base sm:text-lg">
+                <ul className="space-y-3 text-lg lg:text-xl">
                     <li className="flex items-center gap-3"><CheckCircle className="text-green-500 flex-shrink-0" size={24} /><span className="text-gray-700">Profesores expertos 24/7</span></li>
                     <li className="flex items-center gap-3"><CheckCircle className="text-green-500 flex-shrink-0" size={24} /><span className="text-gray-700">Clases en vivo todas las semanas</span></li>
                     <li className="flex items-center gap-3"><CheckCircle className="text-green-500 flex-shrink-0" size={24} /><span className="text-gray-700">Certificación con validez en USA</span></li>
                 </ul>
-                <a href="https://studyxacademia.com/cursos/" target="_blank" rel="noopener noreferrer" className="mt-4 bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg text-base sm:text-lg">
+                <a href="https://studyxacademia.com/cursos/" target="_blank" rel="noopener noreferrer" className="mt-4 bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg text-lg">
                     Explorar Cursos
                 </a>
             </div>
@@ -327,7 +327,7 @@ export default function App() {
                 <header className="bg-gray-50 border-b p-4 flex-shrink-0">
                     <h2 className="text-lg font-semibold text-gray-800">Habla con un Asesor</h2>
                 </header>
-                <main className="flex-1 overflow-y-auto p-4 text-sm sm:text-base">
+                <main className="flex-1 overflow-y-auto p-4 text-base">
                     {messages.map((msg, index) => <ChatMessage key={index} message={msg} />)}
                     {isLoading && (
                         <div className="flex items-start gap-3 my-4 justify-start">
@@ -344,12 +344,12 @@ export default function App() {
                 <footer className="bg-white border-t p-2 flex-shrink-0">
                     <div className="container mx-auto max-w-3xl">
                         <div className="flex justify-center items-center gap-2 mb-2 px-2 flex-wrap">
-                            {showGeminiButtons.suggest && <button onClick={() => handleSendMessage(null, 'suggest_course')} className="bg-purple-100 text-purple-700 text-xs sm:text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Sparkles size={14}/>Sugerir Curso</button>}
-                            {showGeminiButtons.plan && <button onClick={() => handleSendMessage(null, 'create_plan', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-xs sm:text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><BookOpen size={14}/>Crear Plan</button>}
-                            {showGeminiButtons.interview && <button onClick={() => handleSendMessage(null, 'simulate_interview', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-xs sm:text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Briefcase size={14}/>Simular Entrevista</button>}
+                            {showGeminiButtons.suggest && <button onClick={() => handleSendMessage(null, 'suggest_course')} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Sparkles size={14}/>Sugerir Curso</button>}
+                            {showGeminiButtons.plan && <button onClick={() => handleSendMessage(null, 'create_plan', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><BookOpen size={14}/>Crear Plan</button>}
+                            {showGeminiButtons.interview && <button onClick={() => handleSendMessage(null, 'simulate_interview', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Briefcase size={14}/>Simular Entrevista</button>}
                         </div>
                         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                            <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Escribe tu consulta aquí..." className="flex-1 w-full px-4 py-3 border-2 border-transparent rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm sm:text-base" disabled={isLoading} />
+                            <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Escribe tu consulta aquí..." className="flex-1 w-full px-4 py-3 border-2 border-transparent rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-base" disabled={isLoading} />
                             <button type="submit" disabled={isLoading || !input.trim()} className="bg-indigo-600 text-white rounded-full p-3 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-500"><Send size={20} /></button>
                         </form>
                         <div className="flex justify-center mt-2 py-1">
