@@ -104,6 +104,7 @@ export default function App() {
   const chatEndRef = useRef(null);
   const inactivityTimerRef = useRef(null);
   const inputRef = useRef(null);
+  const isInitialMount = useRef(true); // Ref para controlar la carga inicial
 
   const knowledgeBase = `La academia se llama Studyx. La oferta es una suscripción mensual de $25 durante 12 meses. El enlace de pago es: https://buy.stripe.com/eVacOw4yzdz553idQR. El campus virtual es: https://mystudyx.com/campus-virtual. Beneficios: Acceso a TODOS los cursos, profesor online 24/7, clases en vivo semanales. Cursos: Real Estate, Plomería, Inglés, Diseño de Espacios, Paisajismo, Fotografía, Cuidado de Adultos Mayores. Canales de Atención al Cliente (SOLO para después de la venta o si no puedes resolver): Asistencia al Alumno (Teléfono): 866-217-7282, WhatsApp Oficial: 786-916-4372, Email General: info@mystudyx.com, Email para Tutores: studyxtutorias@gmail.com. *Opción de pago Zelle:* info@studyxacademia.com.`;
 
@@ -155,8 +156,18 @@ export default function App() {
     return () => clearTimeout(inactivityTimerRef.current);
   }, [messages]);
 
+  // --- CAMBIO REALIZADO: LÓGICA DE FOCO MEJORADA ---
   useEffect(() => {
-    if (!isLoading) { inputRef.current?.focus(); }
+    // No enfocar en la carga inicial para evitar el scroll de la página padre.
+    // Solo enfocar después de las interacciones subsiguientes.
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (!isLoading) {
+      inputRef.current?.focus();
+    }
   }, [isLoading]);
 
   useEffect(() => {
@@ -317,14 +328,12 @@ export default function App() {
   };
 
   return (
-    // --- CAMBIO REALIZADO: CONTENEDOR PRINCIPAL A PANTALLA COMPLETA ---
     <div className="flex flex-col h-screen bg-gray-100 font-sans">
       {showInvoice && <InvoiceModal customerData={customerData} onClose={() => setShowInvoice(false)} />}
       
       <header className="bg-white shadow-sm z-10 border-b flex-shrink-0">
           <div className="container mx-auto px-4 py-3 flex justify-between items-center">
               <h1 className="text-xl font-bold text-gray-800 tracking-tighter">Asesor Comercial Studyx</h1>
-              {/* Se puede añadir un logo o más elementos aquí si se desea */}
           </div>
       </header>
 
@@ -347,7 +356,6 @@ export default function App() {
 
       <footer className="bg-white border-t p-2 flex-shrink-0">
           <div className="container mx-auto max-w-3xl">
-              {/* --- CAMBIO REALIZADO: REUBICACIÓN DE BOTONES DE IA --- */}
               <div className="flex justify-center items-center gap-2 mb-2 px-2">
                   {showGeminiButtons.suggest && <button onClick={() => handleSendMessage(null, 'suggest_course')} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Sparkles size={14}/>Sugerir Curso</button>}
                   {showGeminiButtons.plan && <button onClick={() => handleSendMessage(null, 'create_plan', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><BookOpen size={14}/>Crear Plan</button>}
