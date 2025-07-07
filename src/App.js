@@ -4,8 +4,6 @@ import { Send, Bot, User, Loader, Sparkles, X, MessageSquare, BookOpen, Briefcas
 // --- URLs de los recursos visuales ---
 const teamAvatarUrl = "https://studyxacademia.com/wp-content/uploads/2024/07/cropped-android-chrome-512x512-2.png";
 const studyxLogoUrl = "https://studyxacademia.com/wp-content/uploads/2024/08/logo-nuevo-xs-min.png";
-const marketingImageUrl = "https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1";
-
 
 // --- Componente para la Factura (Invoice) ---
 const InvoiceModal = ({ customerData, onClose }) => {
@@ -115,7 +113,6 @@ export default function App() {
     const randomName = advisorNames[Math.floor(Math.random() * advisorNames.length)];
     setAdvisorName(randomName);
     setMessages([{ role: 'model', text: `Hola! Mi nombre es ${randomName}, del equipo de asesoramiento de Studyx. Como puedo ayudarte?` }]);
-    // --- CAMBIO REALIZADO: FOCO AUTOMÁTICO AL CARGAR ---
     inputRef.current?.focus();
   }, []);
 
@@ -295,71 +292,74 @@ export default function App() {
   };
 
   return (
-    <div className="w-screen h-screen bg-gray-50 flex flex-col font-sans overflow-hidden">
+    <div className="w-screen h-screen bg-gray-50 flex flex-col font-sans">
       {showInvoice && <InvoiceModal customerData={customerData} onClose={() => setShowInvoice(false)} />}
       
-      <header className="py-4 px-6 md:px-8 bg-white shadow-sm flex-shrink-0 z-10">
-        <img src={studyxLogoUrl} alt="Logo Studyx" className="h-8" />
+      <header className="py-4 bg-white shadow-sm flex-shrink-0 z-10">
+        <div className="container mx-auto px-6 lg:px-8">
+            <img src={studyxLogoUrl} alt="Logo Studyx" className="h-8" />
+        </div>
       </header>
 
-      {/* --- CAMBIO REALIZADO: CLASES RESPONSIVE CORREGIDAS --- */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 p-4 md:p-6 lg:p-8 overflow-hidden">
-        
-        {/* Columna Izquierda: Marketing */}
-        <div className="flex flex-col justify-center items-start space-y-6">
-            <h1 className="text-4xl lg:text-5xl font-bold text-gray-800 leading-tight">
-                Tu Futuro Profesional Comienza Hoy.
-            </h1>
-            <p className="text-lg text-gray-600">
-                Accede a todos nuestros cursos con un solo pago y obtén las habilidades que el mercado laboral demanda.
-            </p>
-            <ul className="space-y-3">
-                <li className="flex items-center gap-3"><CheckCircle className="text-green-500" size={24} /><span className="text-gray-700">Profesores expertos 24/7</span></li>
-                <li className="flex items-center gap-3"><CheckCircle className="text-green-500" size={24} /><span className="text-gray-700">Clases en vivo todas las semanas</span></li>
-                <li className="flex items-center gap-3"><CheckCircle className="text-green-500" size={24} /><span className="text-gray-700">Certificación con validez en USA</span></li>
-            </ul>
-            <a href="https://studyxacademia.com/cursos/" target="_blank" rel="noopener noreferrer" className="mt-4 bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg">
-                Explorar Cursos
-            </a>
-        </div>
+      <main className="flex-1 container mx-auto w-full p-6 lg:p-8 overflow-y-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
+          
+          {/* Columna Izquierda: Marketing */}
+          <div className="flex flex-col justify-center space-y-6 pr-0 lg:pr-12">
+              <h1 className="text-4xl xl:text-5xl font-bold text-gray-800 leading-tight">
+                  Tu Futuro Profesional Comienza Hoy.
+              </h1>
+              <p className="text-lg text-gray-600">
+                  Accede a todos nuestros cursos con un solo pago y obtén las habilidades que el mercado laboral demanda.
+              </p>
+              <ul className="space-y-3">
+                  <li className="flex items-center gap-3"><CheckCircle className="text-green-500" size={24} /><span className="text-gray-700">Profesores expertos 24/7</span></li>
+                  <li className="flex items-center gap-3"><CheckCircle className="text-green-500" size={24} /><span className="text-gray-700">Clases en vivo todas las semanas</span></li>
+                  <li className="flex items-center gap-3"><CheckCircle className="text-green-500" size={24} /><span className="text-gray-700">Certificación con validez en USA</span></li>
+              </ul>
+              <a href="https://studyxacademia.com/cursos/" target="_blank" rel="noopener noreferrer" className="mt-4 bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg">
+                  Explorar Cursos
+              </a>
+          </div>
 
-        {/* Columna Derecha: Chat */}
-        <div className="flex flex-col bg-white rounded-2xl shadow-lg h-full overflow-hidden border border-gray-200">
-            <header className="bg-gray-50 border-b p-4 flex-shrink-0">
-                <h2 className="text-lg font-semibold text-gray-800">Habla con un Asesor</h2>
-            </header>
-            <main className="flex-1 overflow-y-auto p-4">
-                {messages.map((msg, index) => <ChatMessage key={index} message={msg} />)}
-                {isLoading && (
-                    <div className="flex items-start gap-3 my-4 justify-start">
-                        <img src={teamAvatarUrl} alt="Equipo de Studyx escribiendo" className="flex-shrink-0 w-10 h-10 rounded-full object-cover" />
-                        <div className="px-4 py-3 rounded-2xl bg-gray-200 text-gray-500 rounded-tl-none flex items-center justify-center">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{animationDelay: '0s'}}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse mx-1" style={{animationDelay: '0.2s'}}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-                        </div>
-                    </div>
-                )}
-                <div ref={chatEndRef} />
-            </main>
-            <footer className="bg-white border-t p-2 flex-shrink-0">
-                <div className="container mx-auto max-w-3xl">
-                    <div className="flex justify-center items-center gap-2 mb-2 px-2 flex-wrap">
-                        {showGeminiButtons.suggest && <button onClick={() => handleSendMessage(null, 'suggest_course')} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Sparkles size={14}/>Sugerir Curso</button>}
-                        {showGeminiButtons.plan && <button onClick={() => handleSendMessage(null, 'create_plan', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><BookOpen size={14}/>Crear Plan</button>}
-                        {showGeminiButtons.interview && <button onClick={() => handleSendMessage(null, 'simulate_interview', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Briefcase size={14}/>Simular Entrevista</button>}
-                    </div>
-                    <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                        <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Escribe tu consulta aquí..." className="flex-1 w-full px-4 py-3 border-2 border-transparent rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition" disabled={isLoading} />
-                        <button type="submit" disabled={isLoading || !input.trim()} className="bg-indigo-600 text-white rounded-full p-3 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-500"><Send size={20} /></button>
-                    </form>
-                    <div className="flex justify-center mt-2 py-1">
-                        <img src={studyxLogoUrl} alt="Logo Studyx" className="h-5" />
-                    </div>
-                </div>
-            </footer>
+          {/* Columna Derecha: Chat */}
+          <div className="flex flex-col bg-white rounded-2xl shadow-lg h-full overflow-hidden border border-gray-200">
+              <header className="bg-gray-50 border-b p-4 flex-shrink-0">
+                  <h2 className="text-lg font-semibold text-gray-800">Habla con un Asesor</h2>
+              </header>
+              <main className="flex-1 overflow-y-auto p-4">
+                  {messages.map((msg, index) => <ChatMessage key={index} message={msg} />)}
+                  {isLoading && (
+                      <div className="flex items-start gap-3 my-4 justify-start">
+                          <img src={teamAvatarUrl} alt="Equipo de Studyx escribiendo" className="flex-shrink-0 w-10 h-10 rounded-full object-cover" />
+                          <div className="px-4 py-3 rounded-2xl bg-gray-200 text-gray-500 rounded-tl-none flex items-center justify-center">
+                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{animationDelay: '0s'}}></div>
+                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse mx-1" style={{animationDelay: '0.2s'}}></div>
+                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                          </div>
+                      </div>
+                  )}
+                  <div ref={chatEndRef} />
+              </main>
+              <footer className="bg-white border-t p-2 flex-shrink-0">
+                  <div className="container mx-auto max-w-3xl">
+                      <div className="flex justify-center items-center gap-2 mb-2 px-2 flex-wrap">
+                          {showGeminiButtons.suggest && <button onClick={() => handleSendMessage(null, 'suggest_course')} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Sparkles size={14}/>Sugerir Curso</button>}
+                          {showGeminiButtons.plan && <button onClick={() => handleSendMessage(null, 'create_plan', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><BookOpen size={14}/>Crear Plan</button>}
+                          {showGeminiButtons.interview && <button onClick={() => handleSendMessage(null, 'simulate_interview', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Briefcase size={14}/>Simular Entrevista</button>}
+                      </div>
+                      <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                          <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Escribe tu consulta aquí..." className="flex-1 w-full px-4 py-3 border-2 border-transparent rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition" disabled={isLoading} />
+                          <button type="submit" disabled={isLoading || !input.trim()} className="bg-indigo-600 text-white rounded-full p-3 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-500"><Send size={20} /></button>
+                      </form>
+                      <div className="flex justify-center mt-2 py-1">
+                          <img src={studyxLogoUrl} alt="Logo Studyx" className="h-5" />
+                      </div>
+                  </div>
+              </footer>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
