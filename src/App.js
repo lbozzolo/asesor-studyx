@@ -301,18 +301,20 @@ export default function App() {
         </div>
       </header>
 
+      {/* --- CAMBIO REALIZADO: LAYOUT RESPONSIVE CON FLEXBOX --- */}
       <main className="flex-1 w-full p-4 sm:p-6 lg:p-8 overflow-y-auto">
         <div className="container mx-auto h-full">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+            <div className="flex flex-col lg:flex-row gap-8 h-full">
             
-            <div className="flex flex-col justify-center space-y-4 md:space-y-6 pr-0 lg:pr-12">
-                <h1 className="text-3xl md:text-4xl xl:text-5xl font-bold text-gray-800 leading-tight">
+            {/* Columna Izquierda: Marketing (oculta en móvil) */}
+            <div className="hidden lg:flex lg:w-1/2 flex-col justify-center space-y-6 pr-12">
+                <h1 className="text-5xl font-bold text-gray-800 leading-tight">
                     Tu Futuro Profesional Comienza Hoy.
                 </h1>
-                <p className="text-lg md:text-xl text-gray-600">
+                <p className="text-xl text-gray-600">
                     Accede a todos nuestros cursos con un solo pago y obtén las habilidades que el mercado laboral demanda.
                 </p>
-                <ul className="space-y-3 text-lg md:text-xl">
+                <ul className="space-y-3 text-xl">
                     <li className="flex items-center gap-3"><CheckCircle className="text-green-500 flex-shrink-0" size={24} /><span className="text-gray-700">Profesores expertos 24/7</span></li>
                     <li className="flex items-center gap-3"><CheckCircle className="text-green-500 flex-shrink-0" size={24} /><span className="text-gray-700">Clases en vivo todas las semanas</span></li>
                     <li className="flex items-center gap-3"><CheckCircle className="text-green-500 flex-shrink-0" size={24} /><span className="text-gray-700">Certificación con validez en USA</span></li>
@@ -322,7 +324,8 @@ export default function App() {
                 </a>
             </div>
 
-            <div className="flex flex-col bg-white rounded-2xl shadow-lg h-full overflow-hidden border border-gray-200 min-h-[70vh] lg:min-h-0">
+            {/* Columna Derecha: Chat (ocupa todo el ancho en móvil) */}
+            <div className="w-full lg:w-1/2 flex flex-col bg-white rounded-2xl shadow-lg h-full overflow-hidden border border-gray-200">
                 <header className="bg-gray-50 border-b p-4 flex-shrink-0">
                     <h2 className="text-lg font-semibold text-gray-800">Habla con un Asesor</h2>
                 </header>
