@@ -293,6 +293,18 @@ export default function App() {
 
   return (
     <div className="w-screen h-screen bg-gray-50 flex flex-col font-sans text-base">
+      {/* --- CAMBIO REALIZADO: ESTILOS GLOBALES PARA TIPOGRAFÍA RESPONSIVE --- */}
+      <style>{`
+        html {
+          font-size: 16px; /* Tamaño base para desktop */
+        }
+        @media (max-width: 767px) {
+          html {
+            font-size: 17px; /* Letra más grande para móviles */
+          }
+        }
+      `}</style>
+      
       {showInvoice && <InvoiceModal customerData={customerData} onClose={() => setShowInvoice(false)} />}
       
       <header className="py-4 bg-white shadow-sm flex-shrink-0 z-10">
@@ -305,7 +317,6 @@ export default function App() {
         <div className="container mx-auto h-full">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
             
-            {/* --- CAMBIO REALIZADO: TIPOGRAFÍA RESPONSIVE MEJORADA --- */}
             <div className="flex flex-col justify-center space-y-4 md:space-y-6 pr-0 lg:pr-12">
                 <h1 className="text-4xl lg:text-5xl font-bold text-gray-800 leading-tight">
                     Tu Futuro Profesional Comienza Hoy.
