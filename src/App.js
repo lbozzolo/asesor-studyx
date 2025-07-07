@@ -107,7 +107,6 @@ export default function App() {
   const chatEndRef = useRef(null);
   const inactivityTimerRef = useRef(null);
   const inputRef = useRef(null);
-  const isInitialMount = useRef(true);
 
   const knowledgeBase = `La academia se llama Studyx. La oferta es una suscripción mensual de $25 durante 12 meses. El enlace de pago es: https://buy.stripe.com/eVacOw4yzdz553idQR. El campus virtual es: https://mystudyx.com/campus-virtual. Beneficios: Acceso a TODOS los cursos, profesor online 24/7, clases en vivo semanales. Cursos: Real Estate, Plomería, Inglés, Diseño de Espacios, Paisajismo, Fotografía, Cuidado de Adultos Mayores. Canales de Atención al Cliente (SOLO para después de la venta o si no puedes resolver): Asistencia al Alumno (Teléfono): 866-217-7282, WhatsApp Oficial: 786-916-4372, Email General: info@mystudyx.com, Email para Tutores: studyxtutorias@gmail.com. *Opción de pago Zelle:* info@studyxacademia.com.`;
 
@@ -116,6 +115,8 @@ export default function App() {
     const randomName = advisorNames[Math.floor(Math.random() * advisorNames.length)];
     setAdvisorName(randomName);
     setMessages([{ role: 'model', text: `Hola! Mi nombre es ${randomName}, del equipo de asesoramiento de Studyx. Como puedo ayudarte?` }]);
+    // --- CAMBIO REALIZADO: FOCO AUTOMÁTICO AL CARGAR ---
+    inputRef.current?.focus();
   }, []);
 
   const scrollToBottom = () => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
@@ -137,9 +138,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (!isInitialMount.current) {
-      scrollToBottom();
-    }
+    scrollToBottom();
     clearTimeout(inactivityTimerRef.current);
     const lastMessage = messages[messages.length - 1];
     if (lastMessage && lastMessage.role === 'model' && inactivityPromptCount < 2 && salesStage !== 'finalizado') {
@@ -157,9 +156,6 @@ export default function App() {
   }, [messages, isLoading]);
 
   useEffect(() => {
-    if (isInitialMount.current) {
-      return;
-    }
     if (!isLoading) {
       inputRef.current?.focus();
     }
@@ -224,7 +220,6 @@ export default function App() {
     if (e) e.preventDefault();
     const userInput = geminiAction ? `Acción del usuario: ${geminiAction}` : input;
     if (!userInput.trim() && !geminiAction) return;
-    if (isInitialMount.current) { isInitialMount.current = false; }
     const isFirstUserMessage = messages.filter(m => m.role === 'user').length === 0;
     if (!geminiAction) {
         const userMessage = { role: 'user', text: userInput };
@@ -307,10 +302,11 @@ export default function App() {
         <img src={studyxLogoUrl} alt="Logo Studyx" className="h-8" />
       </header>
 
+      {/* --- CAMBIO REALIZADO: CLASES RESPONSIVE CORREGIDAS --- */}
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 p-4 md:p-6 lg:p-8 overflow-hidden">
         
         {/* Columna Izquierda: Marketing */}
-        <div className="hidden md:flex flex-col justify-center items-start space-y-6">
+        <div className="flex flex-col justify-center items-start space-y-6">
             <h1 className="text-4xl lg:text-5xl font-bold text-gray-800 leading-tight">
                 Tu Futuro Profesional Comienza Hoy.
             </h1>
