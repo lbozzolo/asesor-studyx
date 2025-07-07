@@ -293,18 +293,6 @@ export default function App() {
 
   return (
     <div className="w-screen h-screen bg-gray-50 flex flex-col font-sans text-base">
-      {/* --- CAMBIO REALIZADO: ESTILOS GLOBALES PARA TIPOGRAFÍA RESPONSIVE --- */}
-      <style>{`
-        html {
-          font-size: 16px; /* Tamaño base para desktop */
-        }
-        @media (max-width: 767px) {
-          html {
-            font-size: 17px; /* Letra más grande para móviles */
-          }
-        }
-      `}</style>
-      
       {showInvoice && <InvoiceModal customerData={customerData} onClose={() => setShowInvoice(false)} />}
       
       <header className="py-4 bg-white shadow-sm flex-shrink-0 z-10">
@@ -318,13 +306,13 @@ export default function App() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
             
             <div className="flex flex-col justify-center space-y-4 md:space-y-6 pr-0 lg:pr-12">
-                <h1 className="text-4xl lg:text-5xl font-bold text-gray-800 leading-tight">
+                <h1 className="text-3xl md:text-4xl xl:text-5xl font-bold text-gray-800 leading-tight">
                     Tu Futuro Profesional Comienza Hoy.
                 </h1>
-                <p className="text-lg lg:text-xl text-gray-600">
+                <p className="text-lg md:text-xl text-gray-600">
                     Accede a todos nuestros cursos con un solo pago y obtén las habilidades que el mercado laboral demanda.
                 </p>
-                <ul className="space-y-3 text-lg lg:text-xl">
+                <ul className="space-y-3 text-lg md:text-xl">
                     <li className="flex items-center gap-3"><CheckCircle className="text-green-500 flex-shrink-0" size={24} /><span className="text-gray-700">Profesores expertos 24/7</span></li>
                     <li className="flex items-center gap-3"><CheckCircle className="text-green-500 flex-shrink-0" size={24} /><span className="text-gray-700">Clases en vivo todas las semanas</span></li>
                     <li className="flex items-center gap-3"><CheckCircle className="text-green-500 flex-shrink-0" size={24} /><span className="text-gray-700">Certificación con validez en USA</span></li>
