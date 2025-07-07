@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, Loader, Sparkles, X, MessageSquare, BookOpen, Briefcase } from 'lucide-react';
+import { Send, Bot, User, Loader, Sparkles, X, MessageSquare, BookOpen, Briefcase, CheckCircle } from 'lucide-react';
 
 // --- URLs de los recursos visuales ---
 const teamAvatarUrl = "https://studyxacademia.com/wp-content/uploads/2024/07/cropped-android-chrome-512x512-2.png";
+const studyxLogoUrl = "https://studyxacademia.com/wp-content/uploads/2024/08/logo-nuevo-xs-min.png";
+const marketingImageUrl = "https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1";
+
 
 // --- Componente para la Factura (Invoice) ---
 const InvoiceModal = ({ customerData, onClose }) => {
@@ -120,31 +123,23 @@ export default function App() {
   const sendBotMessage = async (textBlocks) => {
     for (const block of textBlocks) {
         setIsLoading(true);
-
         const charsPerSecond = 12;
         const timeToType = (block.length / charsPerSecond) * 1000;
         const baseDelay = 500;
         const totalDelay = baseDelay + timeToType;
-        
-        const maxDelay = 10000; // 10 segundos
+        const maxDelay = 10000;
         const finalDelay = Math.min(totalDelay, maxDelay);
-
         await new Promise(resolve => setTimeout(resolve, finalDelay));
-        
         setIsLoading(false);
         setMessages(prev => [...prev, { role: 'model', text: block }]);
-        
         await new Promise(resolve => setTimeout(resolve, 400)); 
     }
   };
 
-  // --- LÓGICA DE SCROLL CORREGIDA ---
   useEffect(() => {
-    // Siempre hacer scroll, excepto en la carga inicial para evitar el salto de la página padre.
     if (!isInitialMount.current) {
       scrollToBottom();
     }
-
     clearTimeout(inactivityTimerRef.current);
     const lastMessage = messages[messages.length - 1];
     if (lastMessage && lastMessage.role === 'model' && inactivityPromptCount < 2 && salesStage !== 'finalizado') {
@@ -159,13 +154,12 @@ export default function App() {
         }, timeoutDuration);
     }
     return () => clearTimeout(inactivityTimerRef.current);
-  }, [messages, isLoading]); // Se añade isLoading a las dependencias
+  }, [messages, isLoading]);
 
   useEffect(() => {
     if (isInitialMount.current) {
       return;
     }
-
     if (!isLoading) {
       inputRef.current?.focus();
     }
@@ -201,16 +195,11 @@ export default function App() {
             throw new Error("API key not configured.");
         }
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
-        
         const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        
         if (!response.ok) {
-            if (response.status === 429) {
-                throw new Error("429");
-            }
+            if (response.status === 429) { throw new Error("429"); }
             throw new Error("Network error");
         }
-
         const result = await response.json();
         if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts.length > 0) {
             botResponseText = result.candidates[0].content.parts[0].text;
@@ -235,13 +224,8 @@ export default function App() {
     if (e) e.preventDefault();
     const userInput = geminiAction ? `Acción del usuario: ${geminiAction}` : input;
     if (!userInput.trim() && !geminiAction) return;
-
-    if (isInitialMount.current) {
-        isInitialMount.current = false;
-    }
-
+    if (isInitialMount.current) { isInitialMount.current = false; }
     const isFirstUserMessage = messages.filter(m => m.role === 'user').length === 0;
-
     if (!geminiAction) {
         const userMessage = { role: 'user', text: userInput };
         setMessages(prev => [...prev, userMessage]);
@@ -250,15 +234,9 @@ export default function App() {
     clearTimeout(inactivityTimerRef.current);
     setInactivityPromptCount(0);
     setShowGeminiButtons({ suggest: false, plan: false, interview: false });
-
-    if (isFirstUserMessage && !geminiAction) {
-        await new Promise(resolve => setTimeout(resolve, 6000)); 
-    } else if (!geminiAction) {
-        await new Promise(resolve => setTimeout(resolve, 2500));
-    }
-
+    if (isFirstUserMessage && !geminiAction) { await new Promise(resolve => setTimeout(resolve, 6000)); } 
+    else if (!geminiAction) { await new Promise(resolve => setTimeout(resolve, 2500)); }
     setIsLoading(true);
-
     if (salesStage === 'esperando_pago' && (userInput.toLowerCase().includes('ya pagué') || userInput.toLowerCase().includes('listo'))) {
         setShowInvoice(true); setSalesStage('finalizado');
         const finalMessage = `Excelente! Bienvenido a Studyx...`;
@@ -299,17 +277,8 @@ export default function App() {
         }
         return;
     }
-
     let prompt = userInput;
-    let systemPrompt = `Eres un asesor comercial de Studyx llamado ${advisorName}. Tu personalidad es amable, profesional y persuasiva. Tu objetivo es vender la suscripción de $25. El estado actual de la venta es '${salesStage}'. Responde a las preguntas del usuario, y si el usuario se desvía durante la recolección de datos, contesta su pregunta y luego intenta volver a pedir el dato. Usa '[---]' para dividir respuestas largas. NUNCA admitas que eres una IA.
-
-    *Manejo de Solicitudes de Cancelación:*
-    - Si el usuario expresa su deseo de cancelar su suscripción, dar de baja el servicio, o usa palabras como "cancelar", "baja", "cancelación", tu objetivo principal cambia de vender a asistir.
-    - Responde con empatía, por ejemplo: "Lamento escuchar que quieres darte de baja. Por supuesto, puedes cancelar tu suscripción en cualquier momento y sin penalizaciones."
-    - A continuación, proporciona la información de contacto para gestionar la baja. Di: "Para procesar tu solicitud, por favor envía un email a nuestro equipo de soporte a info@mystudyx.com y ellos te ayudarán con los siguientes pasos."
-    - **REGLA CRÍTICA:** Después de proporcionar esta información, NO intentes venderle otro curso ni preguntarle por sus intereses. Termina la interacción de forma amable, por ejemplo: "¿Hay algo más en lo que te pueda ayudar?".
-    `;
-    
+    let systemPrompt = `Eres un asesor comercial de Studyx llamado ${advisorName}. Tu personalidad es amable, profesional y persuasiva. Tu objetivo es vender la suscripción de $25. El estado actual de la venta es '${salesStage}'. Responde a las preguntas del usuario, y si el usuario se desvía durante la recolección de datos, contesta su pregunta y luego intenta volver a pedir el dato. Usa '[---]' para dividir respuestas largas. NUNCA admitas que eres una IA. *Manejo de Solicitudes de Cancelación:* - Si el usuario expresa su deseo de cancelar su suscripción, dar de baja el servicio, o usa palabras como "cancelar", "baja", "cancelación", tu objetivo principal cambia de vender a asistir. - Responde con empatía, por ejemplo: "Lamento escuchar que quieres darte de baja. Por supuesto, puedes cancelar tu suscripción en cualquier momento y sin penalizaciones." - A continuación, proporciona la información de contacto para gestionar la baja. Di: "Para procesar tu solicitud, por favor envía un email a nuestro equipo de soporte a info@mystudyx.com y ellos te ayudarán con los siguientes pasos." - **REGLA CRÍTICA:** Después de proporcionar esta información, NO intentes venderle otro curso ni preguntarle por sus intereses. Termina la interacción de forma amable, por ejemplo: "¿Hay algo más en lo que te pueda ayudar?".`;
     if (geminiAction === 'suggest_course') {
         prompt = `El usuario acaba de enviar su primer mensaje. Basado en el historial de conversación, sugiere el curso más adecuado de la base de conocimientos y explica por qué es una buena opción para él/ella.`;
         systemPrompt += `Tu tarea es únicamente analizar la conversación y sugerir un curso.`;
@@ -320,9 +289,7 @@ export default function App() {
         prompt = `Inicia una simulación de entrevista de trabajo para un puesto relacionado con el curso de "${actionParam}". Haz la primera pregunta.`;
         systemPrompt += `Tu tarea es actuar como un entrevistador de trabajo y hacer preguntas relevantes al curso.`;
     }
-
     const botResponseText = await callGeminiAPI(prompt, systemPrompt + "\n\n" + knowledgeBase);
-    
     if (botResponseText.includes('[INICIAR_REGISTRO]')) {
         setSalesStage('recopilar_nombre');
         const cleanResponse = botResponseText.replace('[INICIAR_REGISTRO]', '').trim();
@@ -333,48 +300,70 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 font-sans">
+    <div className="w-screen h-screen bg-gray-50 flex flex-col font-sans overflow-hidden">
       {showInvoice && <InvoiceModal customerData={customerData} onClose={() => setShowInvoice(false)} />}
       
-      <header className="bg-white shadow-sm z-10 border-b flex-shrink-0">
-          <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-              <h1 className="text-xl font-bold text-gray-800 tracking-tighter">Asesor Comercial Studyx</h1>
-          </div>
+      <header className="py-4 px-6 md:px-8 bg-white shadow-sm flex-shrink-0 z-10">
+        <img src={studyxLogoUrl} alt="Logo Studyx" className="h-8" />
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4">
-          <div className="container mx-auto max-w-3xl">
-              {messages.map((msg, index) => <ChatMessage key={index} message={msg} />)}
-              {isLoading && (
-                  <div className="flex items-start gap-3 my-4 justify-start">
-                      <img src={teamAvatarUrl} alt="Equipo de Studyx escribiendo" className="flex-shrink-0 w-10 h-10 rounded-full object-cover" />
-                      <div className="px-4 py-3 rounded-2xl bg-gray-200 text-gray-500 rounded-tl-none flex items-center justify-center">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{animationDelay: '0s'}}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse mx-1" style={{animationDelay: '0.2s'}}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-                      </div>
-                  </div>
-              )}
-              <div ref={chatEndRef} />
-          </div>
-      </main>
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 p-4 md:p-6 lg:p-8 overflow-hidden">
+        
+        {/* Columna Izquierda: Marketing */}
+        <div className="hidden md:flex flex-col justify-center items-start space-y-6">
+            <h1 className="text-4xl lg:text-5xl font-bold text-gray-800 leading-tight">
+                Tu Futuro Profesional Comienza Hoy.
+            </h1>
+            <p className="text-lg text-gray-600">
+                Accede a todos nuestros cursos con un solo pago y obtén las habilidades que el mercado laboral demanda.
+            </p>
+            <ul className="space-y-3">
+                <li className="flex items-center gap-3"><CheckCircle className="text-green-500" size={24} /><span className="text-gray-700">Profesores expertos 24/7</span></li>
+                <li className="flex items-center gap-3"><CheckCircle className="text-green-500" size={24} /><span className="text-gray-700">Clases en vivo todas las semanas</span></li>
+                <li className="flex items-center gap-3"><CheckCircle className="text-green-500" size={24} /><span className="text-gray-700">Certificación con validez en USA</span></li>
+            </ul>
+            <a href="https://studyxacademia.com/cursos/" target="_blank" rel="noopener noreferrer" className="mt-4 bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg">
+                Explorar Cursos
+            </a>
+        </div>
 
-      <footer className="bg-white border-t p-2 flex-shrink-0">
-          <div className="container mx-auto max-w-3xl">
-              <div className="flex justify-center items-center gap-2 mb-2 px-2">
-                  {showGeminiButtons.suggest && <button onClick={() => handleSendMessage(null, 'suggest_course')} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Sparkles size={14}/>Sugerir Curso</button>}
-                  {showGeminiButtons.plan && <button onClick={() => handleSendMessage(null, 'create_plan', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><BookOpen size={14}/>Crear Plan</button>}
-                  {showGeminiButtons.interview && <button onClick={() => handleSendMessage(null, 'simulate_interview', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Briefcase size={14}/>Simular Entrevista</button>}
-              </div>
-              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                  <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Escribe tu consulta aquí..." className="flex-1 w-full px-4 py-3 border-2 border-transparent rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition" disabled={isLoading} />
-                  <button type="submit" disabled={isLoading || !input.trim()} className="bg-indigo-600 text-white rounded-full p-3 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-500"><Send size={20} /></button>
-              </form>
-              <div className="flex justify-center mt-2 py-1">
-                  <img src="https://studyxacademia.com/wp-content/uploads/2024/08/logo-nuevo-xs-min.png" alt="Logo Studyx" className="h-5" />
-              </div>
-          </div>
-      </footer>
+        {/* Columna Derecha: Chat */}
+        <div className="flex flex-col bg-white rounded-2xl shadow-lg h-full overflow-hidden border border-gray-200">
+            <header className="bg-gray-50 border-b p-4 flex-shrink-0">
+                <h2 className="text-lg font-semibold text-gray-800">Habla con un Asesor</h2>
+            </header>
+            <main className="flex-1 overflow-y-auto p-4">
+                {messages.map((msg, index) => <ChatMessage key={index} message={msg} />)}
+                {isLoading && (
+                    <div className="flex items-start gap-3 my-4 justify-start">
+                        <img src={teamAvatarUrl} alt="Equipo de Studyx escribiendo" className="flex-shrink-0 w-10 h-10 rounded-full object-cover" />
+                        <div className="px-4 py-3 rounded-2xl bg-gray-200 text-gray-500 rounded-tl-none flex items-center justify-center">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{animationDelay: '0s'}}></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse mx-1" style={{animationDelay: '0.2s'}}></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                        </div>
+                    </div>
+                )}
+                <div ref={chatEndRef} />
+            </main>
+            <footer className="bg-white border-t p-2 flex-shrink-0">
+                <div className="container mx-auto max-w-3xl">
+                    <div className="flex justify-center items-center gap-2 mb-2 px-2 flex-wrap">
+                        {showGeminiButtons.suggest && <button onClick={() => handleSendMessage(null, 'suggest_course')} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Sparkles size={14}/>Sugerir Curso</button>}
+                        {showGeminiButtons.plan && <button onClick={() => handleSendMessage(null, 'create_plan', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><BookOpen size={14}/>Crear Plan</button>}
+                        {showGeminiButtons.interview && <button onClick={() => handleSendMessage(null, 'simulate_interview', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Briefcase size={14}/>Simular Entrevista</button>}
+                    </div>
+                    <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                        <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Escribe tu consulta aquí..." className="flex-1 w-full px-4 py-3 border-2 border-transparent rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition" disabled={isLoading} />
+                        <button type="submit" disabled={isLoading || !input.trim()} className="bg-indigo-600 text-white rounded-full p-3 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-500"><Send size={20} /></button>
+                    </form>
+                    <div className="flex justify-center mt-2 py-1">
+                        <img src={studyxLogoUrl} alt="Logo Studyx" className="h-5" />
+                    </div>
+                </div>
+            </footer>
+        </div>
+      </div>
     </div>
   );
 }
