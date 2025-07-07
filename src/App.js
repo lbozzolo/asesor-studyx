@@ -108,6 +108,28 @@ export default function App() {
 
   const knowledgeBase = `La academia se llama Studyx. La oferta es una suscripción mensual de $25 durante 12 meses. El enlace de pago es: https://buy.stripe.com/eVacOw4yzdz553idQR. El campus virtual es: https://mystudyx.com/campus-virtual. Beneficios: Acceso a TODOS los cursos, profesor online 24/7, clases en vivo semanales. Cursos: Real Estate, Plomería, Inglés, Diseño de Espacios, Paisajismo, Fotografía, Cuidado de Adultos Mayores. Canales de Atención al Cliente (SOLO para después de la venta o si no puedes resolver): Asistencia al Alumno (Teléfono): 866-217-7282, WhatsApp Oficial: 786-916-4372, Email General: info@mystudyx.com, Email para Tutores: studyxtutorias@gmail.com. *Opción de pago Zelle:* info@studyxacademia.com.`;
 
+  // --- CAMBIO REALIZADO: AJUSTE DE TIPOGRAFÍA RESPONSIVE ---
+  useEffect(() => {
+    const handleResize = () => {
+      // Ajusta el tamaño de la fuente base del documento del iframe
+      // Esto hace que todas las unidades 'rem' de Tailwind escalen proporcionalmente.
+      const width = window.innerWidth;
+      let fontSize;
+      if (width < 480) { // Celulares pequeños
+        fontSize = '14px';
+      } else if (width < 768) { // Celulares grandes
+        fontSize = '15px';
+      } else { // Tablets y escritorio
+        fontSize = '16px';
+      }
+      document.documentElement.style.fontSize = fontSize;
+    };
+
+    handleResize(); // Ejecutar al montar
+    window.addEventListener('resize', handleResize); // Ejecutar al cambiar tamaño de ventana
+    return () => window.removeEventListener('resize', handleResize); // Limpiar al desmontar
+  }, []);
+
   useEffect(() => {
     const advisorNames = ['Sofía', 'Mateo', 'Valentina', 'Santiago', 'Camila', 'Sebastián'];
     const randomName = advisorNames[Math.floor(Math.random() * advisorNames.length)];
@@ -301,12 +323,10 @@ export default function App() {
         </div>
       </header>
 
-      {/* --- CAMBIO REALIZADO: CONTENEDOR Y RESPONSIVE CORREGIDO --- */}
       <main className="flex-1 w-full p-4 sm:p-6 lg:p-8 overflow-y-auto">
         <div className="container mx-auto h-full">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
             
-            {/* Columna Izquierda: Marketing */}
             <div className="flex flex-col justify-center space-y-6 pr-0 lg:pr-12">
                 <h1 className="text-4xl xl:text-5xl font-bold text-gray-800 leading-tight">
                     Tu Futuro Profesional Comienza Hoy.
@@ -324,7 +344,6 @@ export default function App() {
                 </a>
             </div>
 
-            {/* Columna Derecha: Chat */}
             <div className="flex flex-col bg-white rounded-2xl shadow-lg h-full overflow-hidden border border-gray-200 min-h-[70vh] lg:min-h-0">
                 <header className="bg-gray-50 border-b p-4 flex-shrink-0">
                     <h2 className="text-lg font-semibold text-gray-800">Habla con un Asesor</h2>
