@@ -139,7 +139,13 @@ export default function App() {
   };
 
   useEffect(() => {
-    scrollToBottom();
+    // --- CAMBIO REALIZADO: EVITAR SCROLL EN LA CARGA INICIAL ---
+    // No hacer scroll en la carga inicial para evitar el salto de la página padre.
+    // Solo hacer scroll después de que el usuario haya interactuado.
+    if (!isInitialMount.current) {
+      scrollToBottom();
+    }
+
     clearTimeout(inactivityTimerRef.current);
     const lastMessage = messages[messages.length - 1];
     if (lastMessage && lastMessage.role === 'model' && inactivityPromptCount < 2 && salesStage !== 'finalizado') {
@@ -156,12 +162,9 @@ export default function App() {
     return () => clearTimeout(inactivityTimerRef.current);
   }, [messages]);
 
-  // --- CAMBIO REALIZADO: LÓGICA DE FOCO MEJORADA ---
   useEffect(() => {
-    // No enfocar en la carga inicial para evitar el scroll de la página padre.
-    // Solo enfocar después de las interacciones subsiguientes.
     if (isInitialMount.current) {
-      isInitialMount.current = false;
+      // En el primer render, no hacemos nada con el foco.
       return;
     }
 
@@ -234,6 +237,11 @@ export default function App() {
     if (e) e.preventDefault();
     const userInput = geminiAction ? `Acción del usuario: ${geminiAction}` : input;
     if (!userInput.trim() && !geminiAction) return;
+
+    // Marcar que la montura inicial ha terminado después de la primera interacción
+    if (isInitialMount.current) {
+        isInitialMount.current = false;
+    }
 
     const isFirstUserMessage = messages.filter(m => m.role === 'user').length === 0;
 
