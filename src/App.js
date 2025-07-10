@@ -100,6 +100,9 @@ export default function App() {
   const [systemPrompt, setSystemPrompt] = useState('');
   const [showGeminiButtons, setShowGeminiButtons] = useState({ suggest: false, plan: false, interview: false });
   const [videoUrl, setVideoUrl] = useState(null);
+  const [videoVisible, setVideoVisible] = useState(false); // Nuevo estado para visibilidad
+  const [videoFade, setVideoFade] = useState(false); // Para animación de fade out
+  const videoTimeoutRef = useRef(null);
 
   const chatEndRef = useRef(null);
   const inactivityTimerRef = useRef(null);
@@ -125,25 +128,47 @@ export default function App() {
   const sendBotMessage = async (textBlocks) => {
     for (const block of textBlocks) {
       setIsLoading(true);
-      // Detectar si hay un link de YouTube SOLO en el mensaje actual
-      const youtubeRegex = /(https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/[\w\-?&=%.]+)/i;
-      const match = block.match(youtubeRegex);
-      if (match) {
-        setVideoUrl(match[0]);
-        // Mensaje UX: reemplaza el enlace por un mensaje claro y llamativo
-        const mensajeUX =
-          'Aquí a tu izquierda del chat te he activado un video para que lo veas sin tener que salir del chat.';
+      // Buscar el marcador [VIDEO: y extraer la primera URL de YouTube válida
+      let videoLink = null;
+      let cleanBlock = block;
+      const markerStart = block.indexOf('[VIDEO:');
+      if (markerStart !== -1) {
+        // Extraer todo lo que hay después de [VIDEO:
+        const afterMarker = block.slice(markerStart + 7);
+        // Buscar la primera URL de YouTube en el contenido del marcador
+        const youtubeUrlRegex = /(https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\/[\w\-?&=%.]+)/i;
+        const urlMatch = afterMarker.match(youtubeUrlRegex);
+        if (urlMatch) {
+          videoLink = urlMatch[0].trim();
+        }
+        // Eliminar el marcador y todo lo que sigue de [VIDEO: en adelante
+        cleanBlock = block.slice(0, markerStart).trim();
+      }
+      if (videoLink) {
+        setVideoUrl(videoLink);
+        setVideoVisible(true);
+        setVideoFade(false);
+        if (videoTimeoutRef.current) clearTimeout(videoTimeoutRef.current);
+        videoTimeoutRef.current = setTimeout(() => {
+          setVideoFade(true); // Inicia shrink+fade
+          setTimeout(() => {
+            setVideoVisible(false);
+            setVideoUrl(null);
+            setVideoFade(false);
+          }, 1200); // Duración shrink+fade
+        }, 120000); // 2 minutos
+        // Mostrar el mensaje de la IA sin el marcador
         const charsPerSecond = 12;
-        const timeToType = (mensajeUX.length / charsPerSecond) * 1000;
+        const timeToType = (cleanBlock.length / charsPerSecond) * 1000;
         const baseDelay = 500;
         const totalDelay = baseDelay + timeToType;
         const maxDelay = 10000;
         const finalDelay = Math.min(totalDelay, maxDelay);
         await new Promise(resolve => setTimeout(resolve, finalDelay));
         setIsLoading(false);
-        setMessages(prev => [...prev, { role: 'model', text: mensajeUX }]);
+        setMessages(prev => [...prev, { role: 'model', text: cleanBlock }]);
         await new Promise(resolve => setTimeout(resolve, 400));
-        continue; // No mostrar el mensaje original con el enlace
+        continue;
       }
       const charsPerSecond = 12;
       const timeToType = (block.length / charsPerSecond) * 1000;
@@ -232,7 +257,7 @@ export default function App() {
 
   const handleSendMessage = async (e, geminiAction = null, actionParam = null) => {
     if (e) e.preventDefault();
-    setVideoUrl(null); // <-- Limpia el video antes de cada nueva interacción del usuario
+    // setVideoUrl(null); // <-- Ya NO limpiar el video aquí
     const userInput = geminiAction ? `Acción del usuario: ${geminiAction}` : input;
     if (!userInput.trim() && !geminiAction) return;
     const isFirstUserMessage = messages.filter(m => m.role === 'user').length === 0;
@@ -331,18 +356,27 @@ export default function App() {
                 <li className="flex items-center gap-3"><CheckCircle className="text-blue-500 flex-shrink-0" size={24} /><span className="text-gray-700">Certificación con validez en USA</span></li>
               </ul>
               {/* Video o imagen de la plataforma */}
-              <div className="w-full flex justify-start items-start transition-all duration-500">
-                {videoUrl ? (
+              <div className="w-full flex justify-start items-start transition-all duration-500 relative min-h-[300px]">
+                {/* Video con animación shrink y fade out simultáneos */}
+                {videoUrl && videoVisible && (
                   <iframe
-                    className="w-full max-w-xl aspect-video rounded-xl shadow-lg transition-all duration-500 opacity-100 grow-anim"
+                    className={`w-full max-w-2xl aspect-video rounded-xl shadow-lg absolute top-0 left-0 transition-all z-10
+                      ${videoFade ? 'shrink-fade-left' : 'grow-anim'}`}
                     src={videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
                     title="Video sugerido"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
-                    style={{ minHeight: 250, background: '#000' }}
+                    style={{ minHeight: 300, background: '#000', transformOrigin: 'left top' }}
                   />
-                ) : (
-                  <img className="img transition-all duration-500 opacity-100" src="plataforma.webp" alt="Plataforma Studyx" />
+                )}
+                {/* Imagen con fade in solo cuando el video está desapareciendo */}
+                {((!videoUrl || !videoVisible) || videoFade) && (
+                  <img
+                    className={`img transition-all duration-1000 opacity-100 w-full max-w-2xl aspect-video rounded-xl shadow-lg relative z-0 ${videoFade ? 'fade-in-img-slow' : ''}`}
+                    src="plataforma.webp"
+                    alt="Plataforma Studyx"
+                    style={{ minHeight: 300, background: '#fff', transformOrigin: 'left top' }}
+                  />
                 )}
               </div>
             </div>
@@ -381,7 +415,7 @@ export default function App() {
           </div>
         </div>
       </main>
-      <style>{`@keyframes growAnim { from { transform: scale(0.85); opacity: 0.5; } to { transform: scale(1); opacity: 1; } } .grow-anim { animation: growAnim 0.7s cubic-bezier(0.4,0,0.2,1) forwards; }`}</style>
+      <style>{`@keyframes growAnim { from { transform: scale(0.7); opacity: 0.5; transform-origin: left top; } to { transform: scale(1); opacity: 1; transform-origin: left top; } } .grow-anim { animation: growAnim 0.8s cubic-bezier(0.4,0,0.2,1) forwards; transform-origin: left top; } @keyframes shrinkFadeLeft { from { transform: scale(1); opacity: 1; transform-origin: left top; } to { transform: scale(0.7); opacity: 0; transform-origin: left top; } } .shrink-fade-left { animation: shrinkFadeLeft 1.2s cubic-bezier(0.4,0,0.2,1) forwards; transform-origin: left top; } @keyframes fadeInImgSlow { from { opacity: 0; } to { opacity: 1; } } .fade-in-img-slow { animation: fadeInImgSlow 1.2s linear forwards; }`}</style>
     </div>
   );
 }
