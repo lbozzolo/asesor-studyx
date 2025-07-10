@@ -69,12 +69,9 @@ const ChatMessage = ({ message }) => {
         if (i % 2 === 1) {
           return <strong key={i}>{textPart}</strong>;
         }
-        const lines = textPart.split('\n');
+        const lines = textPart.split('\n').filter(line => line.trim() !== '');
         return lines.map((line, j) => (
-          <React.Fragment key={j}>
-            {line}
-            {j < lines.length - 1 && <br />}
-          </React.Fragment>
+          <span key={j} className="block">{line}</span> // Se usa <span> para mejor control de párrafos
         ));
       });
     });
@@ -166,14 +163,7 @@ export default function App() {
         const botResponseText = lastMessage.text;
         const newButtonState = { suggest: false, plan: false, interview: false };
         const courses = ["Real Estate", "Plomería", "Inglés", "Diseño de Espacios", "Paisajismo", "Fotografía", "Cuidado de Adultos Mayores"];
-        const mentionedCourse = courses.find(course => botResponseText.toLowerCase().includes(course.toLowerCase()));
-        if (mentionedCourse) {
-            setLastCourseMentioned(mentionedCourse);
-            newButtonState.plan = true;
-            newButtonState.interview = true;
-        } else if (userMessagesCount === 1) {
-            newButtonState.suggest = true;
-        }
+
         setShowGeminiButtons(newButtonState);
     }
   }, [messages]);
@@ -272,24 +262,17 @@ export default function App() {
     }
     let prompt = userInput;
     let systemPrompt = `Eres un asesor comercial de Studyx llamado ${advisorName}. Tu personalidad es amable, profesional y persuasiva. Tu objetivo es vender la suscripción de $25. El estado actual de la venta es '${salesStage}'. Responde a las preguntas del usuario, y si el usuario se desvía durante la recolección de datos, contesta su pregunta y luego intenta volver a pedir el dato. Usa '[---]' para dividir respuestas largas. NUNCA admitas que eres una IA. *Manejo de Solicitudes de Cancelación:* - Si el usuario expresa su deseo de cancelar su suscripción, dar de baja el servicio, o usa palabras como "cancelar", "baja", "cancelación", tu objetivo principal cambia de vender a asistir. - Responde con empatía, por ejemplo: "Lamento escuchar que quieres darte de baja. Por supuesto, puedes cancelar tu suscripción en cualquier momento y sin penalizaciones." - A continuación, proporciona la información de contacto para gestionar la baja. Di: "Para procesar tu solicitud, por favor envía un email a nuestro equipo de soporte a info@mystudyx.com y ellos te ayudarán con los siguientes pasos." - **REGLA CRÍTICA:** Después de proporcionar esta información, NO intentes venderle otro curso ni preguntarle por sus intereses. Termina la interacción de forma amable, por ejemplo: "¿Hay algo más en lo que te pueda ayudar?".`;
-    if (geminiAction === 'suggest_course') {
-        prompt = `El usuario acaba de enviar su primer mensaje. Basado en el historial de conversación, sugiere el curso más adecuado de la base de conocimientos y explica por qué es una buena opción para él/ella.`;
-        systemPrompt += `Tu tarea es únicamente analizar la conversación y sugerir un curso.`;
-    } else if (geminiAction === 'create_plan') {
-        prompt = `Crea un plan de estudio simple de 4 semanas para el curso de "${actionParam}". El plan debe ser motivador y práctico.`;
-        systemPrompt += `Tu tarea es generar un plan de estudio semanal para el curso especificado.`;
-    } else if (geminiAction === 'simulate_interview') {
-        prompt = `Inicia una simulación de entrevista de trabajo para un puesto relacionado con el curso de "${actionParam}". Haz la primera pregunta.`;
-        systemPrompt += `Tu tarea es actuar como un entrevistador de trabajo y hacer preguntas relevantes al curso.`;
-    }
     const botResponseText = await callGeminiAPI(prompt, systemPrompt + "\n\n" + knowledgeBase);
-    if (botResponseText.includes('[INICIAR_REGISTRO]')) {
+    const trimmedResponse = botResponseText.replace(/^[\s\n]+/, '');
+
+    if (trimmedResponse.includes('[INICIAR_REGISTRO]')) {
         setSalesStage('recopilar_nombre');
-        const cleanResponse = botResponseText.replace('[INICIAR_REGISTRO]', '').trim();
+        const cleanResponse = trimmedResponse.replace('[INICIAR_REGISTRO]', '').trim();
         await sendBotMessage(cleanResponse.split('[---]'));
     } else {
-        await sendBotMessage(botResponseText.split('[---]'));
+        await sendBotMessage(trimmedResponse.split('[---]'));
     }
+
   };
 
   return (
@@ -349,11 +332,6 @@ export default function App() {
                 </main>
                 <footer className="bg-white border-t p-2 flex-shrink-0">
                     <div className="container mx-auto max-w-3xl">
-                        <div className="flex justify-center items-center gap-2 mb-2 px-2 flex-wrap">
-                            {showGeminiButtons.suggest && <button onClick={() => handleSendMessage(null, 'suggest_course')} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Sparkles size={14}/>Sugerir Curso</button>}
-                            {showGeminiButtons.plan && <button onClick={() => handleSendMessage(null, 'create_plan', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><BookOpen size={14}/>Crear Plan</button>}
-                            {showGeminiButtons.interview && <button onClick={() => handleSendMessage(null, 'simulate_interview', lastCourseMentioned)} className="bg-purple-100 text-purple-700 text-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-purple-200 transition-colors"><Briefcase size={14}/>Simular Entrevista</button>}
-                        </div>
                         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                             <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Escribe tu consulta aquí..." className="flex-1 w-full px-4 py-3 border-2 border-transparent rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-base" disabled={isLoading} />
                             <button type="submit" disabled={isLoading || !input.trim()} className="bg-indigo-600 text-white rounded-full p-3 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-500"><Send size={20} /></button>
