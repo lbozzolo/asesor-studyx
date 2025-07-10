@@ -97,14 +97,20 @@ export default function App() {
   const [customerData, setCustomerData] = useState({});
   const [showInvoice, setShowInvoice] = useState(false);
   const [inactivityPromptCount, setInactivityPromptCount] = useState(0);
+  const [systemPrompt, setSystemPrompt] = useState('');
   const [showGeminiButtons, setShowGeminiButtons] = useState({ suggest: false, plan: false, interview: false });
-  const [lastCourseMentioned, setLastCourseMentioned] = useState("");
 
   const chatEndRef = useRef(null);
   const inactivityTimerRef = useRef(null);
   const inputRef = useRef(null);
 
   const knowledgeBase = `La academia se llama Studyx. La oferta es una suscripción mensual de $25 durante 12 meses. El enlace de pago es: https://buy.stripe.com/eVacOw4yzdz553idQR. El campus virtual es: https://mystudyx.com/campus-virtual. Beneficios: Acceso a TODOS los cursos, profesor online 24/7, clases en vivo semanales. Cursos: Real Estate, Plomería, Inglés, Diseño de Espacios, Paisajismo, Fotografía, Cuidado de Adultos Mayores. Canales de Atención al Cliente (SOLO para después de la venta o si no puedes resolver): Asistencia al Alumno (Teléfono): 866-217-7282, WhatsApp Oficial: 786-916-4372, Email General: info@mystudyx.com, Email para Tutores: studyxtutorias@gmail.com. *Opción de pago Zelle:* info@studyxacademia.com.`;
+
+  useEffect(() => {
+    fetch('/systemPrompt.txt')
+      .then(res => res.text())
+      .then(text => setSystemPrompt(text));
+  }, []);
 
   useEffect(() => {
     const advisorNames = ['Sofía', 'Mateo', 'Valentina', 'Santiago', 'Camila', 'Sebastián'];
@@ -261,7 +267,7 @@ export default function App() {
         return;
     }
     let prompt = userInput;
-    let systemPrompt = `Eres un asesor comercial de Studyx llamado ${advisorName}. Tu personalidad es amable, profesional y persuasiva. Tu objetivo es vender la suscripción de $25. El estado actual de la venta es '${salesStage}'. Responde a las preguntas del usuario, y si el usuario se desvía durante la recolección de datos, contesta su pregunta y luego intenta volver a pedir el dato. Usa '[---]' para dividir respuestas largas. NUNCA admitas que eres una IA. *Manejo de Solicitudes de Cancelación:* - Si el usuario expresa su deseo de cancelar su suscripción, dar de baja el servicio, o usa palabras como "cancelar", "baja", "cancelación", tu objetivo principal cambia de vender a asistir. - Responde con empatía, por ejemplo: "Lamento escuchar que quieres darte de baja. Por supuesto, puedes cancelar tu suscripción en cualquier momento y sin penalizaciones." - A continuación, proporciona la información de contacto para gestionar la baja. Di: "Para procesar tu solicitud, por favor envía un email a nuestro equipo de soporte a info@mystudyx.com y ellos te ayudarán con los siguientes pasos." - **REGLA CRÍTICA:** Después de proporcionar esta información, NO intentes venderle otro curso ni preguntarle por sus intereses. Termina la interacción de forma amable, por ejemplo: "¿Hay algo más en lo que te pueda ayudar?".`;
+    // Usa el systemPrompt cargado desde el archivo
     const botResponseText = await callGeminiAPI(prompt, systemPrompt + "\n\n" + knowledgeBase);
     const trimmedResponse = botResponseText.replace(/^[\s\n]+/, '');
 
@@ -304,10 +310,10 @@ export default function App() {
                     <li className="flex items-center gap-3"><CheckCircle className="text-blue-500 flex-shrink-0" size={24} /><span className="text-gray-700">Clases en vivo todas las semanas</span></li>
                     <li className="flex items-center gap-3"><CheckCircle className="text-blue-500 flex-shrink-0" size={24} /><span className="text-gray-700">Certificación con validez en USA</span></li>
                 </ul>
-                <a href="https://studyxacademia.com/cursos/" target="_blank" rel="noopener noreferrer" 
+                {/* <a href="https://studyxacademia.com/cursos/" target="_blank" rel="noopener noreferrer" 
                     className="mt-4 bg-indigo-600 text-white py-3 px-6 rounded-2xl hover:bg-indigo-700 transition-colors shadow-lg text-sm inline-block self-start">
                     Explorar Cursos
-                </a>
+                </a> */}
                 <img className="img" src="plataforma.webp" />
             </div>
 
