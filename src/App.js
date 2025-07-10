@@ -99,15 +99,11 @@ export default function App() {
   const [inactivityPromptCount, setInactivityPromptCount] = useState(0);
   const [systemPrompt, setSystemPrompt] = useState('');
   const [showGeminiButtons, setShowGeminiButtons] = useState({ suggest: false, plan: false, interview: false });
+  const [videoUrl, setVideoUrl] = useState(null);
 
   const chatEndRef = useRef(null);
   const inactivityTimerRef = useRef(null);
   const inputRef = useRef(null);
-
-  const knowledgeBase = `La academia se llama Studyx. La oferta es una suscripción mensual de $25 durante 12 meses. El enlace de pago es: https://buy.stripe.com/eVacOw4yzdz553idQR. 
-  El campus virtual es: https://mystudyx.com/campus-virtual. Beneficios: Acceso a TODOS los cursos, profesor online 24/7, clases en vivo semanales. 
-  Cursos: Real Estate, Plomería, Inglés, Diseño de Espacios, Paisajismo, Fotografía, Cuidado de Adultos Mayores. 
-  Canales de Atención al Cliente (SOLO para después de la venta o si no puedes resolver): Asistencia al Alumno (Teléfono): 866-217-7282, WhatsApp Oficial: 786-916-4372, Email General: info@mystudyx.com, Email para Tutores: studyxtutorias@gmail.com. *Opción de pago Zelle:* info@studyxacademia.com.`;
 
   useEffect(() => {
     fetch('/systemPrompt.txt')
@@ -125,19 +121,40 @@ export default function App() {
 
   const scrollToBottom = () => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
   
+  // Modifica sendBotMessage para detectar videos de YouTube SOLO en el mensaje más reciente del bot
   const sendBotMessage = async (textBlocks) => {
     for (const block of textBlocks) {
-        setIsLoading(true);
+      setIsLoading(true);
+      // Detectar si hay un link de YouTube SOLO en el mensaje actual
+      const youtubeRegex = /(https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/[\w\-?&=%.]+)/i;
+      const match = block.match(youtubeRegex);
+      if (match) {
+        setVideoUrl(match[0]);
+        // Mensaje UX: reemplaza el enlace por un mensaje claro y llamativo
+        const mensajeUX =
+          'Aquí a tu izquierda del chat te he activado un video para que lo veas sin tener que salir del chat.';
         const charsPerSecond = 12;
-        const timeToType = (block.length / charsPerSecond) * 1000;
+        const timeToType = (mensajeUX.length / charsPerSecond) * 1000;
         const baseDelay = 500;
         const totalDelay = baseDelay + timeToType;
         const maxDelay = 10000;
         const finalDelay = Math.min(totalDelay, maxDelay);
         await new Promise(resolve => setTimeout(resolve, finalDelay));
         setIsLoading(false);
-        setMessages(prev => [...prev, { role: 'model', text: block }]);
-        await new Promise(resolve => setTimeout(resolve, 400)); 
+        setMessages(prev => [...prev, { role: 'model', text: mensajeUX }]);
+        await new Promise(resolve => setTimeout(resolve, 400));
+        continue; // No mostrar el mensaje original con el enlace
+      }
+      const charsPerSecond = 12;
+      const timeToType = (block.length / charsPerSecond) * 1000;
+      const baseDelay = 500;
+      const totalDelay = baseDelay + timeToType;
+      const maxDelay = 10000;
+      const finalDelay = Math.min(totalDelay, maxDelay);
+      await new Promise(resolve => setTimeout(resolve, finalDelay));
+      setIsLoading(false);
+      setMessages(prev => [...prev, { role: 'model', text: block }]);
+      await new Promise(resolve => setTimeout(resolve, 400));
     }
   };
 
@@ -215,6 +232,7 @@ export default function App() {
 
   const handleSendMessage = async (e, geminiAction = null, actionParam = null) => {
     if (e) e.preventDefault();
+    setVideoUrl(null); // <-- Limpia el video antes de cada nueva interacción del usuario
     const userInput = geminiAction ? `Acción del usuario: ${geminiAction}` : input;
     if (!userInput.trim() && !geminiAction) return;
     const isFirstUserMessage = messages.filter(m => m.role === 'user').length === 0;
@@ -271,7 +289,7 @@ export default function App() {
     }
     let prompt = userInput;
     // Usa el systemPrompt cargado desde el archivo
-    const botResponseText = await callGeminiAPI(prompt, systemPrompt + "\n\n" + knowledgeBase);
+    const botResponseText = await callGeminiAPI(prompt, systemPrompt);
     const trimmedResponse = botResponseText.replace(/^[\s\n]+/, '');
 
     if (trimmedResponse.includes('[INICIAR_REGISTRO]')) {
@@ -301,23 +319,32 @@ export default function App() {
             
             {/* Columna Izquierda: Marketing (oculta en móvil) */}
             <div className="hidden lg:flex lg:w-1/2 flex-col justify-center space-y-6 pr-12 p-8">
-            
-                <h1 className="text-5xl font-bold text-gray-800 leading-tight title">
-                    Tu Futuro Profesional Comienza Hoy
-                </h1>
-                <p className="text-xl text-gray-600">
-                    Accede a todos nuestros cursos obtén las habilidades que el mercado laboral demanda.
-                </p>
-                <ul className="space-y-3 text-xl">
-                    <li className="flex items-center gap-3"><CheckCircle className="text-blue-500 flex-shrink-0" size={24} /><span className="text-gray-700">Profesores expertos 24/7</span></li>
-                    <li className="flex items-center gap-3"><CheckCircle className="text-blue-500 flex-shrink-0" size={24} /><span className="text-gray-700">Clases en vivo todas las semanas</span></li>
-                    <li className="flex items-center gap-3"><CheckCircle className="text-blue-500 flex-shrink-0" size={24} /><span className="text-gray-700">Certificación con validez en USA</span></li>
-                </ul>
-                {/* <a href="https://studyxacademia.com/cursos/" target="_blank" rel="noopener noreferrer" 
-                    className="mt-4 bg-indigo-600 text-white py-3 px-6 rounded-2xl hover:bg-indigo-700 transition-colors shadow-lg text-sm inline-block self-start">
-                    Explorar Cursos
-                </a> */}
-                <img className="img" src="plataforma.webp" />
+              <h1 className="text-5xl font-bold text-gray-800 leading-tight title">
+                Tu Futuro Profesional Comienza Hoy
+              </h1>
+              <p className="text-xl text-gray-600">
+                Accede a todos nuestros cursos obtén las habilidades que el mercado laboral demanda.
+              </p>
+              <ul className="space-y-3 text-xl">
+                <li className="flex items-center gap-3"><CheckCircle className="text-blue-500 flex-shrink-0" size={24} /><span className="text-gray-700">Profesores expertos 24/7</span></li>
+                <li className="flex items-center gap-3"><CheckCircle className="text-blue-500 flex-shrink-0" size={24} /><span className="text-gray-700">Clases en vivo todas las semanas</span></li>
+                <li className="flex items-center gap-3"><CheckCircle className="text-blue-500 flex-shrink-0" size={24} /><span className="text-gray-700">Certificación con validez en USA</span></li>
+              </ul>
+              {/* Video o imagen de la plataforma */}
+              <div className="w-full flex justify-start items-start transition-all duration-500">
+                {videoUrl ? (
+                  <iframe
+                    className="w-full max-w-xl aspect-video rounded-xl shadow-lg transition-all duration-500 opacity-100 grow-anim"
+                    src={videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                    title="Video sugerido"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{ minHeight: 250, background: '#000' }}
+                  />
+                ) : (
+                  <img className="img transition-all duration-500 opacity-100" src="plataforma.webp" alt="Plataforma Studyx" />
+                )}
+              </div>
             </div>
 
             {/* Columna Derecha: Chat (ocupa todo el ancho en móvil) */}
@@ -354,6 +381,7 @@ export default function App() {
           </div>
         </div>
       </main>
+      <style>{`@keyframes growAnim { from { transform: scale(0.85); opacity: 0.5; } to { transform: scale(1); opacity: 1; } } .grow-anim { animation: growAnim 0.7s cubic-bezier(0.4,0,0.2,1) forwards; }`}</style>
     </div>
   );
 }
