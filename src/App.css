@@ -48,3 +48,9 @@
 .title {
   line-height: 1em;
 }
+
+.principal {
+  background: linear-gradient(to right, #f8f9fa, #e9ecef);
+  padding: 30px;
+  border-radius: 20px;
+}
