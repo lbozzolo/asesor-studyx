@@ -1,3 +1,4 @@
+import './App.css';
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Bot, User, Loader, Sparkles, X, MessageSquare, BookOpen, Briefcase, CheckCircle } from 'lucide-react';
 
@@ -307,21 +308,24 @@ export default function App() {
             <div className="flex flex-col lg:flex-row gap-8 h-full">
             
             {/* Columna Izquierda: Marketing (oculta en móvil) */}
-            <div className="hidden lg:flex lg:w-1/2 flex-col justify-center space-y-6 pr-12">
-                <h1 className="text-5xl font-bold text-gray-800 leading-tight">
+            <div className="hidden lg:flex lg:w-1/2 flex-col justify-center space-y-6 pr-12 p-5">
+            
+                <h1 className="text-5xl font-bold text-gray-800 leading-tight title">
                     Tu Futuro Profesional Comienza Hoy.
                 </h1>
                 <p className="text-xl text-gray-600">
-                    Accede a todos nuestros cursos con un solo pago y obtén las habilidades que el mercado laboral demanda.
+                    Accede a todos nuestros cursos obtén las habilidades que el mercado laboral demanda.
                 </p>
                 <ul className="space-y-3 text-xl">
                     <li className="flex items-center gap-3"><CheckCircle className="text-green-500 flex-shrink-0" size={24} /><span className="text-gray-700">Profesores expertos 24/7</span></li>
                     <li className="flex items-center gap-3"><CheckCircle className="text-green-500 flex-shrink-0" size={24} /><span className="text-gray-700">Clases en vivo todas las semanas</span></li>
                     <li className="flex items-center gap-3"><CheckCircle className="text-green-500 flex-shrink-0" size={24} /><span className="text-gray-700">Certificación con validez en USA</span></li>
                 </ul>
-                <a href="https://studyxacademia.com/cursos/" target="_blank" rel="noopener noreferrer" className="mt-4 bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg text-lg">
+                <a href="https://studyxacademia.com/cursos/" target="_blank" rel="noopener noreferrer" 
+                    className="mt-4 bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg text-sm inline-block self-start">
                     Explorar Cursos
                 </a>
+                <img className="img" src="plataforma.webp" />
             </div>
 
             {/* Columna Derecha: Chat (ocupa todo el ancho en móvil) */}
