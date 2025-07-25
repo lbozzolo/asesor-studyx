@@ -146,7 +146,6 @@ export default function App() {
   useEffect(() => {
     const fetchCursos = async () => {
         const data = await getCursosFromGoogleSheets();
-        console.log('Datos obtenidos de Google Sheets:', data); // Depuración
         setCursos(data.flat()); // Convierte las filas en un array plano
     };
 
@@ -163,12 +162,8 @@ export default function App() {
       let cleanBlock = block;
       const markerStart = block.indexOf('[VIDEO:');
       if (markerStart !== -1) {
-        const afterMarker = block.slice(markerStart + 7);
-        const youtubeUrlRegex = /(https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\/[\w\-?&=%.]+)/i;
-        const urlMatch = afterMarker.match(youtubeUrlRegex);
-        if (urlMatch) {
-          videoLink = urlMatch[0].trim();
-        }
+        // Reemplazar el video de YouTube por el video local
+        videoLink = '/studyx-institucional-medium.mp4';
         cleanBlock = block.slice(0, markerStart).trim();
       }
       if (videoLink && !videoShown) { // Mostrar el video solo si no se ha mostrado antes
@@ -256,7 +251,6 @@ export default function App() {
             const cursoPalabras = curso.toLowerCase().split(/\s+/); // Divide el nombre del curso en palabras clave
             return cursoPalabras.some(palabra => normalizedPrompt.includes(palabra)); // Verifica si alguna palabra clave está en el prompt
         });
-        console.log("Cursos disponibles para isCourseQuery:", cursos);
         const coursesList = cursos.length > 0 
             ? `Aquí tienes la lista actualizada de cursos disponibles en Studyx: ${cursos.join(', ')}.` 
             : 'Actualmente no hay cursos disponibles.';
