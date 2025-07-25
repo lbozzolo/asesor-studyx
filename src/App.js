@@ -122,6 +122,7 @@ export default function App() {
   const [videoFade, setVideoFade] = useState(false); // Para animación de fade out
   const [cursos, setCursos] = useState([]); // Estado para los cursos
   const [videoShown, setVideoShown] = useState(false); // Nuevo estado para controlar si el video ya se mostró
+  const [errorMessage, setErrorMessage] = useState(null); // Estado para manejar errores
   const videoTimeoutRef = useRef(null);
 
   const chatEndRef = useRef(null);
@@ -251,7 +252,11 @@ export default function App() {
     try {
         // Verificar si el prompt menciona algún curso dinámicamente
         const normalizedPrompt = prompt.toLowerCase().trim();
-        const isCourseQuery = cursos.some(curso => normalizedPrompt.includes(curso.toLowerCase().trim()));
+        const isCourseQuery = cursos.some(curso => {
+            const cursoPalabras = curso.toLowerCase().split(/\s+/); // Divide el nombre del curso en palabras clave
+            return cursoPalabras.some(palabra => normalizedPrompt.includes(palabra)); // Verifica si alguna palabra clave está en el prompt
+        });
+        console.log("Cursos disponibles para isCourseQuery:", cursos);
         const coursesList = cursos.length > 0 
             ? `Aquí tienes la lista actualizada de cursos disponibles en Studyx: ${cursos.join(', ')}.` 
             : 'Actualmente no hay cursos disponibles.';
@@ -275,13 +280,7 @@ export default function App() {
         }
     } catch (error) {
         console.error("Error fetching AI response:", error);
-        if (error.message === "429") {
-            const errorHeader = "Nuestros asesores están con muchas consultas en este momento. Por favor, espera un minuto y vuelve a intentarlo.";
-            const suggestionText = `Mientras tanto, aquí tienes un vistazo a lo que ofrecemos:\n* **Real Estate:** Conviértete en un profesional inmobiliario.\n* **Plomería:** Aprende un oficio con alta demanda.\n* **Inglés:** Abre las puertas al mundo.\n\n¿Quieres ver más? [Explora todos nuestros cursos aquí](https://studyxacademia.com/cursos/).`;
-            botResponseText = `${errorHeader}[---]${suggestionText}`;
-        } else {
-            botResponseText = "Parece que la conexión está un poco inestable. ¿Podrías intentar enviar tu mensaje de nuevo?";
-        }
+        setErrorMessage("Error de conexión - Espere y vuelva a intentar"); // Establecer mensaje de error
     } finally {
         return botResponseText;
     }
@@ -289,6 +288,7 @@ export default function App() {
 
   const handleSendMessage = async (e, geminiAction = null, actionParam = null) => {
     if (e) e.preventDefault();
+    setErrorMessage(null); // Limpiar el mensaje de error al enviar un nuevo mensaje
     // setVideoUrl(null); // <-- Ya NO limpiar el video aquí
     const userInput = geminiAction ? `Acción del usuario: ${geminiAction}` : input;
     if (!userInput.trim() && !geminiAction) return;
@@ -359,9 +359,16 @@ export default function App() {
 
   };
 
+  useEffect(() => {
+    if (errorMessage) {
+      // No agregar el mensaje al flujo del chat, solo mostrarlo como alerta
+      inputRef.current?.focus(); // Asegurar que el input esté enfocado
+    }
+  }, [errorMessage]);
+
   return (
     <div className="w-screen h-screen bg-gray-50 flex flex-col font-sans text-base">
-      {showInvoice && <InvoiceModal customerData={customerData} onClose={() => setShowInvoice(false)} />}
+        {showInvoice && <InvoiceModal customerData={customerData} onClose={() => setShowInvoice(false)} />}
       
       <header className="py-4 bg-white shadow-sm flex-shrink-0 z-10">
         <div className="container mx-auto px-6 lg:px-8">
@@ -436,6 +443,11 @@ export default function App() {
                 </main>
                 <footer className="bg-white border-t p-2 flex-shrink-0">
                     <div className="container mx-auto max-w-3xl">
+                        {errorMessage && (
+                            <div className="bg-red-100 text-red-700 text-sm p-2 text-center mb-2 rounded">
+                                {errorMessage}
+                            </div>
+                        )}
                         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                             <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Escribe tu consulta aquí..." className="flex-1 w-full px-4 py-3 border-2 border-transparent rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-base" disabled={isLoading} />
                             <button type="submit" disabled={isLoading || !input.trim()} className="bg-indigo-600 text-white rounded-full p-3 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-500"><Send size={20} /></button>
