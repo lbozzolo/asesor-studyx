@@ -250,7 +250,8 @@ export default function App() {
     let botResponseText = '';
     try {
         // Verificar si el prompt menciona algún curso dinámicamente
-        const isCourseQuery = cursos.some(curso => prompt.toLowerCase().includes(curso.toLowerCase()));
+        const normalizedPrompt = prompt.toLowerCase().trim();
+        const isCourseQuery = cursos.some(curso => normalizedPrompt.includes(curso.toLowerCase().trim()));
         const coursesList = cursos.length > 0 
             ? `Aquí tienes la lista actualizada de cursos disponibles en Studyx: ${cursos.join(', ')}.` 
             : 'Actualmente no hay cursos disponibles.';
