@@ -87,6 +87,24 @@ const ChatMessage = ({ message }) => {
   );
 };
 
+// Función para obtener los cursos desde Google Sheets
+const getCursosFromGoogleSheets = async () => {
+  const sheetId = '1vNmBjrX9VDO3v-xXxHqrxCqAX_HsO2rxQom_pKa9EqQ'; // Reemplaza con el ID de tu hoja de Google Sheets
+  const range = 'cursos!A1:A'; // Rango de celdas
+  const apiKey = process.env.REACT_APP_GOOGLE_API_KEY;
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    return data.values || [];
+  } catch (error) {
+    console.error('Error al obtener los datos de Google Sheets:', error);
+    return [];
+  }
+};
+
 // --- Componente Principal de la Aplicación de Chat ---
 export default function App() {
   const [messages, setMessages] = useState([]);
@@ -102,6 +120,8 @@ export default function App() {
   const [videoUrl, setVideoUrl] = useState(null);
   const [videoVisible, setVideoVisible] = useState(false); // Nuevo estado para visibilidad
   const [videoFade, setVideoFade] = useState(false); // Para animación de fade out
+  const [cursos, setCursos] = useState([]); // Estado para los cursos
+  const [videoShown, setVideoShown] = useState(false); // Nuevo estado para controlar si el video ya se mostró
   const videoTimeoutRef = useRef(null);
 
   const chatEndRef = useRef(null);
@@ -122,42 +142,48 @@ export default function App() {
     inputRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    const fetchCursos = async () => {
+        const data = await getCursosFromGoogleSheets();
+        console.log('Datos obtenidos de Google Sheets:', data); // Depuración
+        setCursos(data.flat()); // Convierte las filas en un array plano
+    };
+
+    fetchCursos();
+  }, []);
+
   const scrollToBottom = () => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
   
   // Modifica sendBotMessage para detectar videos de YouTube SOLO en el mensaje más reciente del bot
   const sendBotMessage = async (textBlocks) => {
     for (const block of textBlocks) {
       setIsLoading(true);
-      // Buscar el marcador [VIDEO: y extraer la primera URL de YouTube válida
       let videoLink = null;
       let cleanBlock = block;
       const markerStart = block.indexOf('[VIDEO:');
       if (markerStart !== -1) {
-        // Extraer todo lo que hay después de [VIDEO:
         const afterMarker = block.slice(markerStart + 7);
-        // Buscar la primera URL de YouTube en el contenido del marcador
         const youtubeUrlRegex = /(https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\/[\w\-?&=%.]+)/i;
         const urlMatch = afterMarker.match(youtubeUrlRegex);
         if (urlMatch) {
           videoLink = urlMatch[0].trim();
         }
-        // Eliminar el marcador y todo lo que sigue de [VIDEO: en adelante
         cleanBlock = block.slice(0, markerStart).trim();
       }
-      if (videoLink) {
+      if (videoLink && !videoShown) { // Mostrar el video solo si no se ha mostrado antes
         setVideoUrl(videoLink);
         setVideoVisible(true);
         setVideoFade(false);
+        setVideoShown(true); // Marcar el video como mostrado
         if (videoTimeoutRef.current) clearTimeout(videoTimeoutRef.current);
         videoTimeoutRef.current = setTimeout(() => {
-          setVideoFade(true); // Inicia shrink+fade
+          setVideoFade(true);
           setTimeout(() => {
             setVideoVisible(false);
             setVideoUrl(null);
             setVideoFade(false);
-          }, 1200); // Duración shrink+fade
-        }, 120000); // 2 minutos
-        // Mostrar el mensaje de la IA sin el marcador
+          }, 1200);
+        }, 120000);
         const charsPerSecond = 12;
         const timeToType = (cleanBlock.length / charsPerSecond) * 1000;
         const baseDelay = 500;
@@ -213,7 +239,7 @@ export default function App() {
         const userMessagesCount = messages.filter(m => m.role === 'user').length;
         const botResponseText = lastMessage.text;
         const newButtonState = { suggest: false, plan: false, interview: false };
-        const courses = ["Real Estate", "Plomería", "Inglés", "Diseño de Espacios", "Paisajismo", "Fotografía", "Cuidado de Adultos Mayores"];
+        // Eliminar el array estático de cursos y usar el estado dinámico `cursos`
 
         setShowGeminiButtons(newButtonState);
     }
@@ -223,7 +249,11 @@ export default function App() {
   const callGeminiAPI = async (prompt, systemPrompt) => {
     let botResponseText = '';
     try {
-        const chatHistoryForAPI = [...messages.map(m => ({ role: m.role, parts: [{ text: m.text }] })), { role: "user", parts: [{ text: prompt }] }];
+        const isCourseQuery = /curso|cursos|estudio|estudiar|clase|clases/i.test(prompt);
+        const coursesList = isCourseQuery && cursos.length > 0 
+            ? `Aquí tienes la lista actualizada de cursos disponibles en Studyx: ${cursos.join(', ')}.` 
+            : '';
+        const chatHistoryForAPI = [...messages.map(m => ({ role: m.role, parts: [{ text: m.text }] })), { role: "user", parts: [{ text: `${coursesList}\n\n${prompt}`.trim() }] }];
         const payload = { contents: chatHistoryForAPI, systemInstruction: { role: "model", parts: [{ text: systemPrompt }] } };
         const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
         if (!apiKey) {
@@ -337,52 +367,54 @@ export default function App() {
         </div>
       </header>
 
-      {/* --- CAMBIO REALIZADO: LAYOUT RESPONSIVE CON FLEXBOX --- */}
       <main className="flex-1 w-full p-4 sm:p-6 lg:p-8 overflow-y-auto">
         <div className="container mx-auto h-full principal">
             <div className="flex flex-col lg:flex-row gap-8 h-full">
-            
-            {/* Columna Izquierda: Marketing (oculta en móvil) */}
-            <div className="hidden lg:flex lg:w-1/2 flex-col justify-center space-y-6 pr-12 p-8">
-              <h1 className="text-5xl font-bold text-gray-800 leading-tight title">
-                Tu Futuro Profesional Comienza Hoy
-              </h1>
-              <p className="text-xl text-gray-600">
-                Accede a todos nuestros cursos obtén las habilidades que el mercado laboral demanda.
-              </p>
-              <ul className="space-y-3 text-xl">
-                <li className="flex items-center gap-3"><CheckCircle className="text-blue-500 flex-shrink-0" size={24} /><span className="text-gray-700">Profesores expertos 24/7</span></li>
-                <li className="flex items-center gap-3"><CheckCircle className="text-blue-500 flex-shrink-0" size={24} /><span className="text-gray-700">Clases en vivo todas las semanas</span></li>
-                <li className="flex items-center gap-3"><CheckCircle className="text-blue-500 flex-shrink-0" size={24} /><span className="text-gray-700">Certificación con validez en USA</span></li>
-              </ul>
-              {/* Video o imagen de la plataforma */}
-              <div className="w-full flex justify-start items-start transition-all duration-500 relative min-h-[300px]">
-                {/* Video con animación shrink y fade out simultáneos */}
-                {videoUrl && videoVisible && (
-                  <iframe
-                    className={`w-full max-w-2xl aspect-video rounded-xl shadow-lg absolute top-0 left-0 transition-all z-10
-                      ${videoFade ? 'shrink-fade-left' : 'grow-anim'}`}
-                    src={videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-                    title="Video sugerido"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    style={{ minHeight: 300, background: '#000', transformOrigin: 'left top' }}
-                  />
-                )}
-                {/* Imagen con fade in solo cuando el video está desapareciendo */}
-                {((!videoUrl || !videoVisible) || videoFade) && (
-                  <img
-                    className={`img transition-all duration-1000 opacity-100 w-full max-w-2xl aspect-video rounded-xl shadow-lg relative z-0 ${videoFade ? 'fade-in-img-slow' : ''}`}
-                    src="plataforma.webp"
-                    alt="Plataforma Studyx"
-                    style={{ minHeight: 300, background: '#fff', transformOrigin: 'left top' }}
-                  />
-                )}
+              <div className="hidden lg:flex lg:w-1/2 flex-col justify-center space-y-6 pr-12 p-8">
+                <h1 className="text-5xl font-bold text-gray-800 leading-tight title">
+                  Tu Futuro Profesional Comienza Hoy
+                </h1>
+                <p className="text-xl text-gray-600">
+                  Accede a todos nuestros cursos obtén las habilidades que el mercado laboral demanda.
+                </p>
+                <ul className="space-y-3 text-xl">
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="text-blue-500 flex-shrink-0" size={24} />
+                    <span className="text-gray-700">Profesores expertos 24/7</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="text-blue-500 flex-shrink-0" size={24} />
+                    <span className="text-gray-700">Clases en vivo todas las semanas</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="text-blue-500 flex-shrink-0" size={24} />
+                    <span className="text-gray-700">Certificación con validez en USA</span>
+                  </li>
+                </ul>
+                <div className="w-full flex justify-start items-start transition-all duration-500 relative min-h-[300px]">
+      {videoUrl && videoVisible && (
+        <iframe
+          className={`w-full max-w-2xl aspect-video rounded-xl shadow-lg absolute top-0 left-0 transition-all z-10
+            ${videoFade ? 'shrink-fade-left' : 'grow-anim'}`}
+          src={videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+          title="Video sugerido"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          style={{ minHeight: 300, background: '#000', transformOrigin: 'left top' }}
+        />
+      )}
+      {((!videoUrl || !videoVisible) || videoFade) && (
+        <img
+          className={`img transition-all duration-1000 opacity-100 w-full max-w-2xl aspect-video rounded-xl shadow-lg relative z-0 ${videoFade ? 'fade-in-img-slow' : ''}`}
+          src="plataforma.webp"
+          alt="Plataforma Studyx"
+          style={{ minHeight: 300, background: '#fff', transformOrigin: 'left top' }}
+        />
+      )}
+    </div>
               </div>
-            </div>
 
-            {/* Columna Derecha: Chat (ocupa todo el ancho en móvil) */}
-            <div className="w-full lg:w-1/2 flex flex-col bg-white rounded-2xl shadow-lg h-full overflow-hidden border border-gray-200">
+              <div className="w-full lg:w-1/2 flex flex-col bg-white rounded-2xl shadow-lg h-full overflow-hidden border border-gray-200">
                 <header className="bg-gray-50 border-b p-4 flex-shrink-0">
                     <h2 className="text-lg font-semibold text-gray-800">Habla con un Asesor</h2>
                 </header>
@@ -411,11 +443,10 @@ export default function App() {
                         </div>
                     </div>
                 </footer>
+              </div>
             </div>
-          </div>
         </div>
       </main>
-      <style>{`@keyframes growAnim { from { transform: scale(0.7); opacity: 0.5; transform-origin: left top; } to { transform: scale(1); opacity: 1; transform-origin: left top; } } .grow-anim { animation: growAnim 0.8s cubic-bezier(0.4,0,0.2,1) forwards; transform-origin: left top; } @keyframes shrinkFadeLeft { from { transform: scale(1); opacity: 1; transform-origin: left top; } to { transform: scale(0.7); opacity: 0; transform-origin: left top; } } .shrink-fade-left { animation: shrinkFadeLeft 1.2s cubic-bezier(0.4,0,0.2,1) forwards; transform-origin: left top; } @keyframes fadeInImgSlow { from { opacity: 0; } to { opacity: 1; } } .fade-in-img-slow { animation: fadeInImgSlow 1.2s linear forwards; }`}</style>
     </div>
   );
 }
