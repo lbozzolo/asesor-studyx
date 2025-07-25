@@ -249,7 +249,8 @@ export default function App() {
   const callGeminiAPI = async (prompt, systemPrompt) => {
     let botResponseText = '';
     try {
-        const isCourseQuery = /curso|cursos|estudio|estudiar|clase|clases|depilación/i.test(prompt);
+        // Verificar si el prompt menciona algún curso dinámicamente
+        const isCourseQuery = cursos.some(curso => prompt.toLowerCase().includes(curso.toLowerCase()));
         const coursesList = cursos.length > 0 
             ? `Aquí tienes la lista actualizada de cursos disponibles en Studyx: ${cursos.join(', ')}.` 
             : 'Actualmente no hay cursos disponibles.';
