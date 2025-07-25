@@ -249,14 +249,13 @@ export default function App() {
   const callGeminiAPI = async (prompt, systemPrompt) => {
     let botResponseText = '';
     try {
-        const isCourseQuery = /curso|cursos|estudio|estudiar|clase|clases/i.test(prompt);
-        const coursesList = isCourseQuery && cursos.length > 0 
+        const isCourseQuery = /curso|cursos|estudio|estudiar|clase|clases|depilación/i.test(prompt);
+        const coursesList = cursos.length > 0 
             ? `Aquí tienes la lista actualizada de cursos disponibles en Studyx: ${cursos.join(', ')}.` 
-            : '';
-        const chatHistoryForAPI = [...messages.map(m => ({ role: m.role, parts: [{ text: m.text }] })), { role: "user", parts: [{ text: `${coursesList}\n\n${prompt}`.trim() }] }];
+            : 'Actualmente no hay cursos disponibles.';
+        const chatHistoryForAPI = [...messages.map(m => ({ role: m.role, parts: [{ text: m.text }] })), { role: "user", parts: [{ text: `${isCourseQuery ? coursesList : ''}\n\n${prompt}`.trim() }] }];
         const payload = { contents: chatHistoryForAPI, systemInstruction: { role: "model", parts: [{ text: systemPrompt }] } };
         const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
-        console.log('Google API Key:', process.env.REACT_APP_GOOGLE_API_KEY);
         if (!apiKey) {
             throw new Error("API key not configured.");
         }
