@@ -123,6 +123,7 @@ export default function App() {
   const [cursos, setCursos] = useState([]); // Estado para los cursos
   const [videoShown, setVideoShown] = useState(false); // Nuevo estado para controlar si el video ya se mostró
   const [errorMessage, setErrorMessage] = useState(null); // Estado para manejar errores
+  const [isMobile, setIsMobile] = useState(false); // Estado para detectar dispositivos móviles
   const videoTimeoutRef = useRef(null);
 
   const chatEndRef = useRef(null);
@@ -150,6 +151,17 @@ export default function App() {
     };
 
     fetchCursos();
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768); // Consideramos móvil si el ancho es menor o igual a 768px
+    };
+
+    handleResize(); // Verificar al cargar la página
+    window.addEventListener('resize', handleResize); // Escuchar cambios de tamaño
+
+    return () => window.removeEventListener('resize', handleResize); // Limpiar el evento al desmontar
   }, []);
 
   const scrollToBottom = () => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
@@ -360,6 +372,41 @@ export default function App() {
     }
   }, [errorMessage]);
 
+  const renderVideo = () => {
+    if (isMobile) {
+      return (
+        <div className="flex items-start gap-3 my-4 justify-start">
+          <img
+            src={teamAvatarUrl}
+            alt="Equipo de Studyx"
+            className="flex-shrink-0 w-10 h-10 rounded-full object-cover"
+          />
+          <div className="px-4 py-3 rounded-2xl bg-gray-200 text-gray-800 rounded-tl-none max-w-lg">
+            <video
+              className="w-full rounded-xl shadow-lg"
+              src={videoUrl}
+              controls
+              autoPlay
+              style={{ background: '#000' }}
+            />
+          </div>
+        </div>
+      );
+    } else {
+      return (
+        <iframe
+          className={`w-full max-w-2xl aspect-video rounded-xl shadow-lg absolute top-0 left-0 transition-all z-10
+            ${videoFade ? 'shrink-fade-left' : 'grow-anim'}`}
+          src={videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+          title="Video sugerido"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          style={{ minHeight: 300, background: '#000', transformOrigin: 'left top' }}
+        />
+      );
+    }
+  };
+
   return (
     <div className="w-screen h-screen bg-gray-50 flex flex-col font-sans text-base">
         {showInvoice && <InvoiceModal customerData={customerData} onClose={() => setShowInvoice(false)} />}
@@ -395,17 +442,7 @@ export default function App() {
                   </li>
                 </ul>
                 <div className="w-full flex justify-start items-start transition-all duration-500 relative min-h-[300px]">
-      {videoUrl && videoVisible && (
-        <iframe
-          className={`w-full max-w-2xl aspect-video rounded-xl shadow-lg absolute top-0 left-0 transition-all z-10
-            ${videoFade ? 'shrink-fade-left' : 'grow-anim'}`}
-          src={videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-          title="Video sugerido"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          style={{ minHeight: 300, background: '#000', transformOrigin: 'left top' }}
-        />
-      )}
+      {videoUrl && videoVisible && renderVideo()}
       {((!videoUrl || !videoVisible) || videoFade) && (
         <img
           className={`img transition-all duration-1000 opacity-100 w-full max-w-2xl aspect-video rounded-xl shadow-lg relative z-0 ${videoFade ? 'fade-in-img-slow' : ''}`}
