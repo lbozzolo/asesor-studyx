@@ -177,6 +177,10 @@ export default function App() {
         // Reemplazar el video de YouTube por el video local
         videoLink = '/studyx-institucional-medium.mp4';
         cleanBlock = block.slice(0, markerStart).trim();
+        if (!videoShown) { // Solo agregar el mensaje si el video no se ha mostrado antes
+          const locationMessage = "El video estará disponible para que lo veas.";
+          cleanBlock += ` ${locationMessage}`;
+        }
       }
       if (videoLink && !videoShown) { // Mostrar el video solo si no se ha mostrado antes
         setVideoUrl(videoLink);
@@ -407,6 +411,12 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    console.log("Estado de videoUrl:", videoUrl);
+    console.log("Estado de videoVisible:", videoVisible);
+    console.log("Estado de isMobile:", isMobile);
+  }, [videoUrl, videoVisible, isMobile]);
+
   return (
     <div className="w-screen h-screen bg-gray-50 flex flex-col font-sans text-base">
         {showInvoice && <InvoiceModal customerData={customerData} onClose={() => setShowInvoice(false)} />}
@@ -418,8 +428,8 @@ export default function App() {
       </header>
 
       <main className="flex-1 w-full p-4 sm:p-6 lg:p-8 overflow-y-auto">
-        <div className="container mx-auto h-full principal">
-            <div className="flex flex-col lg:flex-row gap-8 h-full">
+        <div className="container mx-auto h-full principal px-0 sm:px-6 lg:px-8" style={{ padding: isMobile ? '0' : '' }}>
+            <div className="flex flex-col lg:flex-row gap-4 h-full">
               <div className="hidden lg:flex lg:w-1/2 flex-col justify-center space-y-6 pr-12 p-8">
                 <h1 className="text-5xl font-bold text-gray-800 leading-tight title">
                   Tu Futuro Profesional Comienza Hoy
