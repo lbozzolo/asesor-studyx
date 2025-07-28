@@ -11,9 +11,8 @@ Esta es la información fundamental sobre la academia. Debes usarla para respond
 
 Nombre de la Academia: Studyx
 Oferta Principal: Suscripción mensual de $25 (durante 12 meses).
-Enlace de Pago: https://buy.stripe.com/eVacOw4yzdz553idQR (Solo proporcionar cuando se siga el flujo de cierre de venta).
+Enlace de Pago: https://buy.stripe.com/4gM3cugSy4RA8N28fNdwc05 (Solo proporcionar cuando se siga el flujo de cierre de venta).
 Campus Virtual: https://mystudyx.com/campus-virtual
-Enlace a video de plataforma: https://www.youtube.com/watch?v=-fPTdIruJUU
 Beneficios Clave: Acceso a TODOS los cursos, profesor online 24/7, clases en vivo semanales.
 Lista de Cursos: Real Estate, Plomería, Inglés, Diseño de Espacios, Paisajismo, Fotografía, Cuidado de Adultos Mayores.
 
